@@ -546,6 +546,8 @@
     </div>
   </div>
 
+  <div style="text-align:center; font-size:0.7rem; color:var(--dim); margin-bottom:10px;" id="version-label"></div>
+
   <div class="card">
     <div class="card-title">Exportera kontext till Claude</div>
     <p style="font-size:0.85rem; color:var(--muted); margin-bottom:10px;">Generera en sammanfattning av din data att klistra in i Claude för personlig coaching.</p>
@@ -911,6 +913,8 @@
 </nav>
 
 <script>
+  const APP_VERSION = '2026-06-08 v8'
+
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
   const SUPABASE_KEY = 'sb_publishable_ZcpwyXIaecTytq1cu8qX1Q_EovV5xtV'
@@ -936,6 +940,7 @@
 
   // ── Init ──────────────────────────────────────────────────
   async function init() {
+    document.getElementById('version-label').textContent = APP_VERSION
     setDateDefaults()
     await handleStravaCallback()
     await loadProfile()
