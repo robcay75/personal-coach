@@ -1005,7 +1005,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v25'
+  const APP_VERSION = '2026-06-09 v26'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1990,64 +1990,43 @@
     const startDate = new Date(`${today}T${isSecond ? '12' : '08'}:00:00`)
     const { data: existing } = await db.from('workouts').select('strava_activity_id').eq('id', workoutId).maybeSingle()
 
-    let activityId
+    const privacyBody = { visibility: 'only_me', commute: true, hide_from_home: true }
+
     if (existing?.strava_activity_id) {
       const putResp = await fetch(`https://www.strava.com/api/v3/activities/${existing.strava_activity_id}`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          description: `${count} t/r loggat via Personal Coach`,
-          perceived_exertion: commuteRpe,
-          commute: true,
-          hide_from_home: true,
-          private: true
-        })
+        body: JSON.stringify({ name, description: `${count} t/r loggat via Personal Coach`, perceived_exertion: commuteRpe, ...privacyBody })
       })
       const putData = await putResp.json()
       if (!putResp.ok) throw new Error(putData.message || putResp.status)
-      activityId = existing.strava_activity_id
     } else {
       const postResp = await fetch('https://www.strava.com/api/v3/activities', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
-          type: stravaType,
+          name, type: stravaType,
           start_date_local: startDate.toISOString(),
           elapsed_time: totalMin * 60,
           distance: totalKm * 1000,
           description: `${count} t/r loggat via Personal Coach`,
           perceived_exertion: commuteRpe,
-          commute: true,
-          hide_from_home: true,
-          private: true
+          commute: true, hide_from_home: true
         })
       })
       const rawText = await postResp.text()
       if (!postResp.ok) throw new Error(`HTTP ${postResp.status}: ${rawText}`)
       const created = JSON.parse(rawText)
-      activityId = created.id
-      if (activityId) {
-        await db.from('workouts').update({ strava_activity_id: activityId }).eq('id', workoutId)
+      if (created.id) {
+        await db.from('workouts').update({ strava_activity_id: created.id }).eq('id', workoutId)
+        // Sätt privat via separat PUT (POST stöder inte visibility)
+        await fetch(`https://www.strava.com/api/v3/activities/${created.id}`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(privacyBody)
+        })
       }
     }
-
-    // Hämta aktiviteten för att få Stravas beräknade kalorier
-    if (activityId) {
-      const getResp = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      if (getResp.ok) {
-        const detail = await getResp.json()
-        if (detail.calories > 0) return detail.calories
-        if (detail.kilojoules > 0) return Math.round(detail.kilojoules * 0.239)
-      }
-    }
-
-    // Fallback-estimering baserat på typ och tid
-    const kcalPerMin = type === 'pendling-cykling' ? 5.5 : 3.5
-    return Math.round(kcalPerMin * totalMin)
   }
 
   // ── RPE / Strava sync ────────────────────────────────────
