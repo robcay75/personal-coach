@@ -1586,11 +1586,13 @@
   function intVal(id) { const v = parseInt(document.getElementById(id).value); return isNaN(v) ? null : v }
   function floatVal(id) { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? null : v }
 
+  const statusTimers = {}
   function setStatus(id, msg, isError = false) {
+    if (statusTimers[id]) { clearTimeout(statusTimers[id]); delete statusTimers[id] }
     const el = document.getElementById(id)
     el.textContent = msg
     el.className = 'status' + (isError ? ' error' : '')
-    if (!isError) setTimeout(() => { el.textContent = '' }, 3000)
+    if (!isError) statusTimers[id] = setTimeout(() => { el.textContent = '' }, 3000)
   }
 
   function updateStars(containerId, n) {
