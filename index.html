@@ -1233,6 +1233,13 @@
     return d.toISOString().split('T')[0]
   }
 
+  // Scrolla fältet i vy när tangentbordet öppnas på mobil
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('focus', () => {
+      setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)
+    })
+  })
+
   init()
 </script>
 </body>
