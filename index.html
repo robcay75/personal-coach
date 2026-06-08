@@ -819,6 +819,13 @@
   <div class="page-title">👤 Profil</div>
 
   <div class="card">
+    <div class="card-title">Strava</div>
+    <p style="font-size:0.85rem; color:var(--muted); margin-bottom:10px;">Koppla ditt Strava-konto för att automatiskt synka pendlingsresor.</p>
+    <div id="strava-status" style="font-size:0.85rem; margin-bottom:10px;">Kontrollerar...</div>
+    <button id="strava-btn" class="btn btn-ghost" onclick="connectStrava()">🔗 Koppla Strava</button>
+  </div>
+
+  <div class="card">
     <div class="card-title">Om dig</div>
 
     <div class="row2">
@@ -876,13 +883,6 @@
 
     <button class="btn btn-primary" onclick="saveProfile()">Spara profil</button>
     <div id="p-status" class="status"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Strava</div>
-    <p style="font-size:0.85rem; color:var(--muted); margin-bottom:10px;">Koppla ditt Strava-konto för att automatiskt synka pendlingsresor.</p>
-    <div id="strava-status" style="font-size:0.85rem; margin-bottom:10px;">Kontrollerar...</div>
-    <button id="strava-btn" class="btn btn-ghost" onclick="connectStrava()">🔗 Koppla Strava</button>
   </div>
 </div>
 
