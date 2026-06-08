@@ -1706,7 +1706,7 @@
     const stravaType = type === 'pendling-cykling' ? 'Ride' : 'Walk'
     const name = type === 'pendling-cykling' ? `🚴 Pendling cykel` : `🚶 Pendling promenad`
 
-    const startDate = new Date(`${today}T08:00:00`)
+    const startDate = new Date()
     const { data: existing } = await db.from('workouts').select('strava_activity_id').eq('id', workoutId).maybeSingle()
 
     if (existing?.strava_activity_id) {
