@@ -1735,8 +1735,9 @@
           hide_from_home: true
         })
       })
-      const activity = await postResp.json()
-      if (!postResp.ok) throw new Error(activity.message || postResp.status)
+      const rawText = await postResp.text()
+      if (!postResp.ok) throw new Error(`HTTP ${postResp.status}: ${rawText}`)
+      const activity = JSON.parse(rawText)
       if (activity.id) {
         await db.from('workouts').update({ strava_activity_id: activity.id }).eq('id', workoutId)
       }
