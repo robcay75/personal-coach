@@ -1201,12 +1201,14 @@
     const { data: saved } = await db.from('workouts').select('id, strava_activity_id').eq('date', today).eq('type', dbType).maybeSingle()
     if (saved) {
       const token = await getStravaToken()
-      if (token) {
+      if (!token) {
+        setStatus('commute-status', '⚠️ Loggat lokalt — Strava inte kopplat eller token utgången.', true)
+      } else {
         try {
           await pushToStrava(token, saved.id, dbType, count, totalMin, totalKm)
           setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat & synkat till Strava! ${count} t/r`)
         } catch (e) {
-          setStatus('commute-status', `Loggat lokalt men Strava-sync misslyckades: ${e.message}`)
+          setStatus('commute-status', `⚠️ Loggat lokalt men Strava misslyckades: ${e.message}`, true)
         }
       }
     }
