@@ -1000,7 +1000,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v20'
+  const APP_VERSION = '2026-06-09 v21'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1146,7 +1146,7 @@
 
     // This week
     const weekStart = getWeekStart()
-    const weekWorkouts = workouts.filter(w => w.date >= weekStart && w.type !== 'pendling-cykling' && w.type !== 'pendling-promenad')
+    const weekWorkouts = workouts.filter(w => w.date >= weekStart)
     document.getElementById('home-week-workouts').textContent = weekWorkouts.length
 
     // Weekly bar chart
