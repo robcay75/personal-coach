@@ -1706,7 +1706,13 @@
     const stravaType = type === 'pendling-cykling' ? 'Ride' : 'Walk'
     const name = type === 'pendling-cykling' ? `🚴 Pendling cykel` : `🚶 Pendling promenad`
 
-    const startDate = new Date()
+    // Räkna hur många pendlingstyper som finns idag (exkl. denna)
+    const { data: otherCommutes } = await db.from('workouts')
+      .select('id').eq('date', today)
+      .in('type', ['pendling-cykling', 'pendling-promenad'])
+      .neq('type', dbType)
+    const isSecond = (otherCommutes || []).length > 0
+    const startDate = new Date(`${today}T${isSecond ? '12' : '08'}:00:00`)
     const { data: existing } = await db.from('workouts').select('strava_activity_id').eq('id', workoutId).maybeSingle()
 
     if (existing?.strava_activity_id) {
