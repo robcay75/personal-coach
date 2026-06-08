@@ -1095,7 +1095,7 @@
     for (let i = 0; i < 7; i++) {
       const d = new Date(weekStart + 'T00:00:00')
       d.setDate(d.getDate() + i)
-      const dateStr = d.toISOString().split('T')[0]
+      const dateStr = localDate(d)
       const count = counts[dateStr] || 0
       const isToday = dateStr === today
       const pct = Math.round((count / max) * 100)
@@ -1599,6 +1599,10 @@
     document.querySelectorAll('#' + containerId + ' button').forEach((btn, i) => {
       btn.classList.toggle('on', i < n)
     })
+  }
+
+  function localDate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
   }
 
   function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
