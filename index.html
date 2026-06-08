@@ -1000,7 +1000,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v21'
+  const APP_VERSION = '2026-06-09 v22'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1165,7 +1165,7 @@
 
   function calcStreak(dates) {
     const sorted = [...new Set(dates)].sort().reverse()
-    let streak = 0, check = today
+    let streak = 0, check = sorted.includes(today) ? today : prevDay(today)
     for (const d of sorted) {
       if (d === check) { streak++; check = prevDay(check) }
       else if (d < check) break
