@@ -261,6 +261,11 @@
     .item-card .item-note { font-size: 0.82rem; color: var(--dim); font-style: italic; margin-top: 4px; }
 
     .empty { color: var(--dim); font-size: 0.9rem; text-align: center; padding: 24px 0; }
+    .date-header { font-size: 0.78rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 0 4px; }
+    .date-header:first-child { padding-top: 2px; }
+    .cal-edit { cursor: pointer; border-bottom: 1px dashed var(--muted); transition: color 0.15s, border-color 0.15s; }
+    .cal-edit:hover { color: var(--accent); border-color: var(--accent); }
+    .cal-edit input { width: 70px; background: var(--surface2); border: 1px solid var(--accent); border-radius: 6px; color: inherit; padding: 2px 6px; font-size: inherit; font-family: inherit; }
 
     /* ── Weight chart ── */
     .weight-progress {
@@ -760,7 +765,7 @@
   </div>
 
   <div class="card">
-    <div class="card-title">Idag</div>
+    <div class="card-title">Måltider</div>
     <div id="meal-list" class="item-list">
       <div class="empty">Laddar...</div>
     </div>
@@ -1000,7 +1005,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v23'
+  const APP_VERSION = '2026-06-09 v24'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1390,20 +1395,47 @@
   }
 
   async function loadMeals() {
-    const { data } = await db.from('meals').select('*').eq('date', today).order('created_at')
+    const sevenAgo = new Date(); sevenAgo.setDate(sevenAgo.getDate() - 6)
+    const { data } = await db.from('meals').select('*').gte('date', localDate(sevenAgo)).order('date', { ascending: false }).order('created_at', { ascending: false })
     const list = document.getElementById('meal-list')
-    if (!data?.length) { list.innerHTML = '<div class="empty">Inga måltider loggade idag.</div>'; return }
+    if (!data?.length) { list.innerHTML = '<div class="empty">Inga måltider loggade.</div>'; return }
     const typeIcons = { frukost: 'sunrise', lunch: 'sun', middag: 'moon', mellanmål: 'apple' }
-    list.innerHTML = data.map(m => `
-      <div class="item-card">
-        <div class="item-top">
-          <span class="item-title"><i data-lucide="${typeIcons[m.meal_type] || 'utensils'}"></i> ${capitalize(m.meal_type || 'Måltid')}</span>
-          ${m.health_score ? `<span class="health-badge hb-${m.health_score}">${m.health_score}</span>` : ''}
-        </div>
-        <div class="item-meta">${m.description}${m.calories ? ' · ' + m.calories + ' kcal' : ''}</div>
-        ${m.comment ? `<div class="item-note">${m.comment}</div>` : ''}
-      </div>`).join('')
+    const byDate = {}
+    data.forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m) })
+    let html = ''
+    for (const date of Object.keys(byDate).sort().reverse()) {
+      const label = date === today ? 'Idag' : date === prevDay(today) ? 'Igår' : fmtDate(date)
+      html += `<div class="date-header">${label}</div>`
+      html += byDate[date].map(m => `
+        <div class="item-card">
+          <div class="item-top">
+            <span class="item-title"><i data-lucide="${typeIcons[m.meal_type] || 'utensils'}"></i> ${capitalize(m.meal_type || 'Måltid')}</span>
+            ${m.health_score ? `<span class="health-badge hb-${m.health_score}">${m.health_score}</span>` : ''}
+          </div>
+          <div class="item-meta">${m.description} · <span class="cal-edit" data-id="${m.id}" onclick="editMealCal(this)">${m.calories != null ? m.calories + ' kcal' : '<span style="color:var(--dim)">+ kcal</span>'}</span></div>
+          ${m.comment ? `<div class="item-note">${m.comment}</div>` : ''}
+        </div>`).join('')
+    }
+    list.innerHTML = html
     lucide.createIcons()
+  }
+
+  function editMealCal(el) {
+    const id = el.dataset.id
+    const cur = parseInt(el.textContent)
+    const input = document.createElement('input')
+    input.type = 'number'
+    input.value = isNaN(cur) ? '' : cur
+    input.style.cssText = 'width:70px;background:var(--surface2);border:1px solid var(--accent);border-radius:6px;color:inherit;padding:2px 6px;font-size:inherit;font-family:inherit;'
+    el.replaceWith(input)
+    input.focus(); input.select()
+    async function save() {
+      const kcal = parseInt(input.value)
+      await db.from('meals').update({ calories: isNaN(kcal) ? null : kcal }).eq('id', id)
+      loadMeals(); updateCalToday()
+    }
+    input.addEventListener('blur', save)
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') loadMeals() })
   }
 
   function calcTDEE() {
