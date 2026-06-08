@@ -211,7 +211,7 @@
 
     .today-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 8px;
       margin-bottom: 14px;
     }
@@ -225,6 +225,8 @@
     }
     .today-pill .pill-icon { font-size: 1.3rem; margin-bottom: 2px; }
     .today-pill.done { color: var(--green); }
+    .today-pill:not(.done) { cursor: pointer; }
+    .today-pill:not(.done):hover { background: var(--surface2); }
 
     /* ── Workout list ── */
     .item-list { display: flex; flex-direction: column; gap: 8px; }
@@ -428,6 +430,50 @@
     .week-bar.today { background: var(--green); }
     .week-bar-label { font-size: 0.65rem; color: var(--dim); }
 
+    /* ── RPE picker ── */
+    .rpe-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+    .rpe-row {
+      display: flex;
+      gap: 4px;
+    }
+    .rpe-btn {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 2px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.1s;
+    }
+    .rpe-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Strava sync btn ── */
+    .btn-strava-sync {
+      background: #fc4c02;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-strava-sync:hover { background: #e43e00; }
+
     /* ── Commute buttons ── */
     .commute-btns {
       display: grid;
@@ -531,17 +577,21 @@
   <div class="card">
     <div class="card-title">Idag</div>
     <div class="today-grid">
-      <div class="today-pill" id="today-workout">
+      <div class="today-pill" id="today-workout" onclick="switchTab('workout')">
         <div class="pill-icon">💪</div>
         <div id="today-workout-label">Träning</div>
       </div>
-      <div class="today-pill" id="today-meal">
+      <div class="today-pill" id="today-meal" onclick="switchTab('meal')">
         <div class="pill-icon">🍽️</div>
         <div id="today-meal-label">Måltider</div>
       </div>
-      <div class="today-pill" id="today-checkin">
+      <div class="today-pill" id="today-checkin" onclick="switchTab('checkin')">
         <div class="pill-icon">🌙</div>
         <div id="today-checkin-label">Check-in</div>
+      </div>
+      <div class="today-pill" id="today-weight" onclick="switchTab('weight')">
+        <div class="pill-icon">⚖️</div>
+        <div id="today-weight-label">Vikt</div>
       </div>
     </div>
   </div>
@@ -576,6 +626,19 @@
         <div class="cb-label">Promenad t/r</div>
         <div class="cb-count" id="commute-walk-count">Idag: 0 st</div>
       </button>
+    </div>
+    <div class="rpe-label">Upplevd ansträngning (RPE 1–10)</div>
+    <div class="rpe-row" id="rpe-row">
+      <button class="rpe-btn" onclick="setCommuteRpe(1)">1</button>
+      <button class="rpe-btn active" onclick="setCommuteRpe(2)">2</button>
+      <button class="rpe-btn" onclick="setCommuteRpe(3)">3</button>
+      <button class="rpe-btn" onclick="setCommuteRpe(4)">4</button>
+      <button class="rpe-btn" onclick="setCommuteRpe(5)">5</button>
+      <button class="rpe-btn" onclick="setCommuteRpe(6)">6</button>
+      <button class="rpe-btn" onclick="setCommuteRpe(7)">7</button>
+      <button class="rpe-btn" onclick="setCommuteRpe(8)">8</button>
+      <button class="rpe-btn" onclick="setCommuteRpe(9)">9</button>
+      <button class="rpe-btn" onclick="setCommuteRpe(10)">10</button>
     </div>
     <div id="commute-status" class="status"></div>
   </div>
@@ -614,7 +677,11 @@
   </div>
 
   <div class="card">
-    <div class="card-title">Senaste pass</div>
+    <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>Senaste pass</span>
+      <button class="btn-strava-sync" onclick="syncFromStrava()">↓ Synka Strava</button>
+    </div>
+    <div id="strava-sync-status" class="status" style="margin-top:0; margin-bottom:4px; min-height:14px; font-size:0.78rem;"></div>
     <div id="workout-list" class="item-list">
       <div class="empty">Laddar...</div>
     </div>
@@ -932,7 +999,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-08 v8'
+  const APP_VERSION = '2026-06-08 v9'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -954,6 +1021,7 @@
   let bodyFeeling = 0
   let energyLevel = 0
   let eveBodyFeeling = 0
+  let commuteRpe = 2
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -1054,11 +1122,12 @@
     const thirtyAgo = new Date(); thirtyAgo.setDate(thirtyAgo.getDate() - 30)
     const thirtyStr = thirtyAgo.toISOString().split('T')[0]
 
-    const [workoutsRes, mealsRes, checkinTodayRes, checkinsRes] = await Promise.all([
+    const [workoutsRes, mealsRes, checkinTodayRes, checkinsRes, weightTodayRes] = await Promise.all([
       db.from('workouts').select('date, duration_minutes, type').gte('date', thirtyStr).order('date', { ascending: false }),
       db.from('meals').select('date').gte('date', thirtyStr).order('date', { ascending: false }),
       db.from('checkins').select('*').eq('date', today).maybeSingle(),
-      db.from('checkins').select('date, sleep_hours, sleep_quality, body_feeling').gte('date', thirtyStr).order('date', { ascending: false })
+      db.from('checkins').select('date, sleep_hours, sleep_quality, body_feeling').gte('date', thirtyStr).order('date', { ascending: false }),
+      db.from('weight_logs').select('date').eq('date', today).maybeSingle()
     ])
 
     const workouts = workoutsRes.data || []
@@ -1089,6 +1158,7 @@
     setPill('today-workout', 'today-workout-label', workouts.some(w => w.date === today), 'Tränat', 'Träning')
     setPill('today-meal', 'today-meal-label', meals.some(m => m.date === today), 'Loggat', 'Måltider')
     setPill('today-checkin', 'today-checkin-label', !!checkinTodayRes.data, 'Klart', 'Check-in')
+    setPill('today-weight', 'today-weight-label', !!weightTodayRes.data, 'Loggad', 'Vikt')
   }
 
   function calcStreak(dates) {
@@ -1202,21 +1272,22 @@
       ;({ error } = await db.from('workouts').update({
         duration_minutes: totalMin,
         distance_km: totalKm,
-        notes: `${count} t/r`
+        notes: `${count} t/r`,
+        perceived_exertion: commuteRpe
       }).eq('id', existing.id))
     } else {
       ;({ error } = await db.from('workouts').insert({
         type: dbType, date: today,
         duration_minutes: totalMin,
         distance_km: totalKm,
-        notes: `${count} t/r`
+        notes: `${count} t/r`,
+        perceived_exertion: commuteRpe
       }))
     }
 
     if (error) return setStatus('commute-status', 'Fel: ' + error.message, true)
     setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat! ${count} t/r (${totalKm} km, ${totalMin} min)`)
 
-    // Hämta ID på det sparade passet och pusha till Strava
     const { data: saved } = await db.from('workouts').select('id, strava_activity_id').eq('date', today).eq('type', dbType).maybeSingle()
     if (saved) {
       const token = await getStravaToken()
@@ -1224,8 +1295,13 @@
         setStatus('commute-status', '⚠️ Loggat lokalt — Strava inte kopplat eller token utgången.', true)
       } else {
         try {
-          await pushToStrava(token, saved.id, dbType, count, totalMin, totalKm)
-          setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat & synkat till Strava! ${count} t/r`)
+          const kcal = await pushToStrava(token, saved.id, dbType, count, totalMin, totalKm)
+          if (kcal) {
+            await db.from('workouts').update({ calories: kcal }).eq('id', saved.id)
+            setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat & synkat! ${count} t/r · ${kcal} kcal`)
+          } else {
+            setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat & synkat till Strava! ${count} t/r`)
+          }
         } catch (e) {
           setStatus('commute-status', `⚠️ Loggat lokalt men Strava misslyckades: ${e.message}`, true)
         }
@@ -1268,14 +1344,14 @@
     const { data } = await db.from('workouts').select('*').order('date', { ascending: false }).limit(15)
     const list = document.getElementById('workout-list')
     if (!data?.length) { list.innerHTML = '<div class="empty">Inga pass loggade ännu.</div>'; return }
-    const icons = { simning: '🏊', löpning: '🏃', cykling: '🚴', gym: '💪', annat: '⚡' }
+    const icons = { simning: '🏊', löpning: '🏃', cykling: '🚴', gym: '💪', annat: '⚡', 'pendling-cykling': '🚴', 'pendling-promenad': '🚶' }
     list.innerHTML = data.map(w => `
       <div class="item-card">
         <div class="item-top">
           <span class="item-title">${icons[w.type] || '⚡'} ${capitalize(w.type)}</span>
           <span class="item-date">${fmtDate(w.date)}</span>
         </div>
-        <div class="item-meta">${w.duration_minutes} min${w.distance_km ? ' · ' + w.distance_km + ' km' : ''}</div>
+        <div class="item-meta">${w.duration_minutes} min${w.distance_km ? ' · ' + w.distance_km + ' km' : ''}${w.calories ? ' · 🔥 ' + w.calories + ' kcal' : ''}</div>
         ${w.notes ? `<div class="item-note">${w.notes}</div>` : ''}
       </div>`).join('')
   }
@@ -1348,14 +1424,16 @@
   async function updateCalToday() {
     const [mealsRes, workoutsRes] = await Promise.all([
       db.from('meals').select('calories').eq('date', today),
-      db.from('workouts').select('duration_minutes, type').eq('date', today)
+      db.from('workouts').select('duration_minutes, type, calories').eq('date', today)
     ])
     if (!mealsRes.data) return
 
     const eaten = mealsRes.data.reduce((s, m) => s + (m.calories || 0), 0)
-    const burned = (workoutsRes.data || [])
-      .filter(w => !w.type.startsWith('pendling'))
-      .reduce((s, w) => s + Math.round(w.duration_minutes * 7), 0)
+    const burned = (workoutsRes.data || []).reduce((s, w) => {
+      if (w.calories) return s + w.calories
+      if (w.type.startsWith('pendling')) return s
+      return s + Math.round(w.duration_minutes * 7)
+    }, 0)
 
     const target = calcCalorieTarget()
     const card = document.getElementById('calorie-card')
@@ -1772,7 +1850,7 @@
 
   // ── Strava OAuth ──────────────────────────────────────────
   function connectStrava() {
-    const url = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT_URI)}&approval_prompt=force&scope=activity:write`
+    const url = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT_URI)}&approval_prompt=force&scope=activity:read_all,activity:write`
     window.location.href = url
   }
 
@@ -1852,15 +1930,15 @@
     const stravaType = type === 'pendling-cykling' ? 'Ride' : 'Walk'
     const name = type === 'pendling-cykling' ? `🚴 Pendling cykel` : `🚶 Pendling promenad`
 
-    // Räkna hur många pendlingstyper som finns idag (exkl. denna)
     const { data: otherCommutes } = await db.from('workouts')
       .select('id').eq('date', today)
       .in('type', ['pendling-cykling', 'pendling-promenad'])
-      .neq('type', dbType)
+      .neq('type', type)
     const isSecond = (otherCommutes || []).length > 0
     const startDate = new Date(`${today}T${isSecond ? '12' : '08'}:00:00`)
     const { data: existing } = await db.from('workouts').select('strava_activity_id').eq('id', workoutId).maybeSingle()
 
+    let activity
     if (existing?.strava_activity_id) {
       const putResp = await fetch(`https://www.strava.com/api/v3/activities/${existing.strava_activity_id}`, {
         method: 'PUT',
@@ -1868,12 +1946,14 @@
         body: JSON.stringify({
           name,
           description: `${count} t/r loggat via Personal Coach`,
+          perceived_exertion: commuteRpe,
           commute: true,
           hide_from_home: true
         })
       })
       const putData = await putResp.json()
       if (!putResp.ok) throw new Error(putData.message || putResp.status)
+      activity = putData
     } else {
       const postResp = await fetch('https://www.strava.com/api/v3/activities', {
         method: 'POST',
@@ -1885,17 +1965,98 @@
           elapsed_time: totalMin * 60,
           distance: totalKm * 1000,
           description: `${count} t/r loggat via Personal Coach`,
+          perceived_exertion: commuteRpe,
           commute: true,
           hide_from_home: true
         })
       })
       const rawText = await postResp.text()
       if (!postResp.ok) throw new Error(`HTTP ${postResp.status}: ${rawText}`)
-      const activity = JSON.parse(rawText)
+      activity = JSON.parse(rawText)
       if (activity.id) {
         await db.from('workouts').update({ strava_activity_id: activity.id }).eq('id', workoutId)
       }
     }
+    return activity?.calories || (activity?.kilojoules ? Math.round(activity.kilojoules * 0.239) : null)
+  }
+
+  // ── RPE / Strava sync ────────────────────────────────────
+  function setCommuteRpe(n) {
+    commuteRpe = n
+    document.querySelectorAll('#rpe-row .rpe-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', i + 1 === n)
+    })
+  }
+
+  async function syncFromStrava() {
+    setStatus('strava-sync-status', 'Hämtar från Strava...')
+    const token = await getStravaToken()
+    if (!token) {
+      setStatus('strava-sync-status', '⚠️ Koppla Strava i Profil-fliken först.', true)
+      return
+    }
+
+    const { data: existingRows } = await db.from('workouts').select('strava_activity_id').not('strava_activity_id', 'is', null)
+    const existingIds = new Set((existingRows || []).map(w => String(w.strava_activity_id)))
+
+    const after = Math.floor((Date.now() - 14 * 24 * 60 * 60 * 1000) / 1000)
+    let resp
+    try {
+      resp = await fetch(`https://www.strava.com/api/v3/athlete/activities?after=${after}&per_page=100`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+    } catch (e) {
+      setStatus('strava-sync-status', '⚠️ Nätverksfel mot Strava.', true)
+      return
+    }
+
+    if (!resp.ok) {
+      if (resp.status === 401 || resp.status === 403) {
+        setStatus('strava-sync-status', '⚠️ Saknar läsbehörighet — koppla om Strava i Profil-fliken.', true)
+      } else {
+        setStatus('strava-sync-status', `⚠️ Strava fel: ${resp.status}`, true)
+      }
+      return
+    }
+
+    const activities = await resp.json()
+    const toImport = activities.filter(a => !existingIds.has(String(a.id)))
+
+    if (!toImport.length) {
+      setStatus('strava-sync-status', 'Inget nytt att hämta.')
+      return
+    }
+
+    const rows = toImport.map(a => ({
+      type: mapStravaType(a.sport_type || a.type),
+      date: a.start_date_local.split('T')[0],
+      duration_minutes: Math.round(a.elapsed_time / 60),
+      distance_km: a.distance ? Math.round(a.distance / 100) / 10 : null,
+      calories: a.calories || null,
+      strava_activity_id: a.id,
+      notes: a.name || null
+    }))
+
+    const { error } = await db.from('workouts').insert(rows)
+    if (error) {
+      setStatus('strava-sync-status', `⚠️ Fel: ${error.message}`, true)
+      return
+    }
+
+    setStatus('strava-sync-status', `✓ Hämtade ${toImport.length} pass från Strava`)
+    loadWorkouts()
+  }
+
+  function mapStravaType(t) {
+    const map = {
+      Run: 'löpning', VirtualRun: 'löpning', TrailRun: 'löpning',
+      Ride: 'cykling', VirtualRide: 'cykling', GravelRide: 'cykling',
+      MountainBikeRide: 'cykling', EMountainBikeRide: 'cykling', EBikeRide: 'cykling',
+      Swim: 'simning',
+      WeightTraining: 'gym', Workout: 'gym', Crossfit: 'gym',
+      HighIntensityIntervalTraining: 'gym',
+    }
+    return map[t] || 'annat'
   }
 
   // ── Målvikt-förslag ───────────────────────────────────────
