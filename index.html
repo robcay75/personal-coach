@@ -2,148 +2,427 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Personal Coach — POC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Personal Coach</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface2: #262626;
+      --border: #2e2e2e;
+      --text: #f0f0f0;
+      --muted: #888;
+      --dim: #555;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --green: #4ade80;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --nav-height: 64px;
+    }
+
+    html, body { height: 100%; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0f0f0f;
-      color: #f0f0f0;
-      min-height: 100vh;
-      padding: 24px 16px;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: var(--nav-height);
     }
 
-    h1 {
+    /* ── Layout ── */
+    .tab-content { display: none; padding: 20px 16px 8px; max-width: 540px; margin: 0 auto; }
+    .tab-content.active { display: block; }
+
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--nav-height);
+      background: #111;
+      border-top: 1px solid var(--border);
+      display: flex;
+    }
+
+    .bottom-nav button {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--dim);
       font-size: 1.4rem;
-      font-weight: 700;
-      margin-bottom: 24px;
-      color: #fff;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 0;
+      transition: color 0.15s;
     }
 
-    h2 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 12px;
-      color: #aaa;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    .bottom-nav button span {
+      font-size: 0.62rem;
+      letter-spacing: 0.03em;
     }
 
-    section {
-      background: #1a1a1a;
+    .bottom-nav button.active { color: var(--accent); }
+
+    /* ── Cards / Sections ── */
+    .card {
+      background: var(--surface);
       border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
+      padding: 16px;
+      margin-bottom: 14px;
     }
 
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    /* ── Forms ── */
     label {
       display: block;
-      font-size: 0.85rem;
-      color: #888;
+      font-size: 0.82rem;
+      color: var(--muted);
       margin-bottom: 4px;
       margin-top: 12px;
     }
-
     label:first-of-type { margin-top: 0; }
 
     input, select, textarea {
       width: 100%;
-      background: #262626;
-      border: 1px solid #333;
+      background: var(--surface2);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      color: #f0f0f0;
+      color: var(--text);
       font-size: 1rem;
       padding: 10px 12px;
       outline: none;
       transition: border-color 0.15s;
+      font-family: inherit;
     }
-
-    input:focus, select:focus, textarea:focus {
-      border-color: #555;
-    }
-
+    input:focus, select:focus, textarea:focus { border-color: #555; }
     textarea { resize: vertical; min-height: 70px; }
 
-    button {
-      margin-top: 16px;
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: block;
       width: 100%;
-      background: #2563eb;
-      color: #fff;
       border: none;
-      border-radius: 8px;
-      font-size: 1rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
       font-weight: 600;
       padding: 12px;
       cursor: pointer;
       transition: background 0.15s;
+      font-family: inherit;
+      margin-top: 14px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:disabled { background: var(--surface2); color: var(--dim); cursor: not-allowed; }
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-export {
+      background: #16a34a;
+      color: #fff;
+    }
+    .btn-export:hover { background: #15803d; }
+
+    .status {
+      margin-top: 8px;
+      font-size: 0.82rem;
+      min-height: 18px;
+      color: var(--green);
+    }
+    .status.error { color: var(--red); }
+
+    /* ── Home ── */
+    .page-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 16px;
     }
 
-    button:hover { background: #1d4ed8; }
-    button:disabled { background: #333; color: #666; cursor: not-allowed; }
-
-    #status {
-      margin-top: 10px;
+    .countdown-card {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .countdown-card .goal-label {
+      font-size: 0.8rem;
+      color: #93c5fd;
+      margin-bottom: 4px;
+    }
+    .countdown-card .goal-text {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .countdown-card .days {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+    }
+    .countdown-card .days-label {
       font-size: 0.85rem;
-      min-height: 20px;
-      color: #4ade80;
+      color: #93c5fd;
+      margin-top: 4px;
     }
 
-    #status.error { color: #f87171; }
-
-    .workout-list { display: flex; flex-direction: column; gap: 10px; }
-
-    .workout-card {
-      background: #262626;
-      border-radius: 8px;
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border-radius: 12px;
       padding: 14px;
+      text-align: center;
+    }
+    .stat-card .stat-val {
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .stat-card .stat-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 4px;
     }
 
-    .workout-card .top {
+    .today-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .today-pill {
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .today-pill .pill-icon { font-size: 1.3rem; margin-bottom: 2px; }
+    .today-pill.done { color: var(--green); }
+
+    /* ── Workout list ── */
+    .item-list { display: flex; flex-direction: column; gap: 8px; }
+    .item-card {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .item-card .item-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 4px;
+    }
+    .item-card .item-title { font-weight: 600; font-size: 0.95rem; }
+    .item-card .item-date { font-size: 0.78rem; color: var(--dim); }
+    .item-card .item-meta { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+    .item-card .item-note { font-size: 0.82rem; color: var(--dim); font-style: italic; margin-top: 4px; }
+
+    .empty { color: var(--dim); font-size: 0.9rem; text-align: center; padding: 24px 0; }
+
+    /* ── Weight chart ── */
+    .weight-progress {
+      margin-bottom: 8px;
+    }
+    .progress-bar-wrap {
+      background: var(--surface2);
+      border-radius: 999px;
+      height: 8px;
+      margin: 8px 0 4px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--green);
+      transition: width 0.4s ease;
+    }
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--muted);
     }
 
-    .workout-card .type {
+    svg.chart {
+      width: 100%;
+      height: 120px;
+      margin-top: 8px;
+    }
+
+    /* ── Check-in toggle ── */
+    .toggle-group {
+      display: flex;
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 14px;
+    }
+    .toggle-group button {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.9rem;
       font-weight: 600;
-      font-size: 0.95rem;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .toggle-group button.active {
+      background: var(--surface);
+      color: var(--text);
     }
 
-    .workout-card .date {
-      font-size: 0.8rem;
-      color: #666;
+    /* ── Star rating ── */
+    .star-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .star-row button {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      color: var(--dim);
+      transition: color 0.1s;
+    }
+    .star-row button.on { color: var(--yellow); }
+
+    /* ── Meal health badge ── */
+    .health-badge {
+      display: inline-block;
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-align: center;
+      line-height: 22px;
+      margin-right: 4px;
+    }
+    .hb-1 { background: #7f1d1d; color: #fca5a5; }
+    .hb-2 { background: #78350f; color: #fcd34d; }
+    .hb-3 { background: #365314; color: #86efac; }
+    .hb-4 { background: #14532d; color: #4ade80; }
+    .hb-5 { background: #052e16; color: #bbf7d0; }
+
+    /* ── Export ── */
+    .export-area {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: pre-wrap;
+      font-family: monospace;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 10px;
+      display: none;
     }
 
-    .workout-card .meta {
-      font-size: 0.85rem;
-      color: #888;
+    /* ── Misc ── */
+    .section-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 14px 0;
     }
-
-    .workout-card .notes {
-      margin-top: 6px;
-      font-size: 0.85rem;
-      color: #666;
-      font-style: italic;
-    }
-
-    .empty { color: #555; font-size: 0.9rem; text-align: center; padding: 20px 0; }
-
-    .type-icon { margin-right: 6px; }
   </style>
 </head>
 <body>
 
-  <h1>🏋️ Personal Coach</h1>
+<!-- ═══════════════════════════════════
+     HEM
+═══════════════════════════════════ -->
+<div id="tab-home" class="tab-content active">
+  <div class="page-title">👋 Hej <span id="home-name">Coach</span></div>
 
-  <section>
-    <h2>Logga träningspass</h2>
+  <div class="countdown-card" id="countdown-card">
+    <div class="goal-label">Mål</div>
+    <div class="goal-text" id="home-goal">—</div>
+    <div class="days" id="home-days">—</div>
+    <div class="days-label">dagar kvar</div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-val" id="home-streak">0</div>
+      <div class="stat-label">🔥 Träningsstreak</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="home-week-workouts">0</div>
+      <div class="stat-label">💪 Pass den här veckan</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Idag</div>
+    <div class="today-grid">
+      <div class="today-pill" id="today-workout">
+        <div class="pill-icon">💪</div>
+        <div id="today-workout-label">Träning</div>
+      </div>
+      <div class="today-pill" id="today-meal">
+        <div class="pill-icon">🍽️</div>
+        <div id="today-meal-label">Måltider</div>
+      </div>
+      <div class="today-pill" id="today-checkin">
+        <div class="pill-icon">🌙</div>
+        <div id="today-checkin-label">Check-in</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Exportera kontext till Claude</div>
+    <p style="font-size:0.85rem; color:var(--muted); margin-bottom:10px;">Generera en sammanfattning av din data att klistra in i Claude för personlig coaching.</p>
+    <button class="btn btn-export" onclick="exportContext()">📋 Exportera kontext</button>
+    <div id="export-output" class="export-area"></div>
+    <div id="export-status" class="status"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     TRÄNING
+═══════════════════════════════════ -->
+<div id="tab-workout" class="tab-content">
+  <div class="page-title">💪 Träning</div>
+
+  <div class="card">
+    <div class="card-title">Logga pass</div>
 
     <label>Typ</label>
-    <select id="type">
+    <select id="w-type">
       <option value="simning">🏊 Simning</option>
       <option value="löpning">🏃 Löpning</option>
       <option value="cykling">🚴 Cykling</option>
@@ -152,121 +431,809 @@
     </select>
 
     <label>Datum</label>
-    <input type="date" id="date" />
+    <input type="date" id="w-date" />
 
-    <label>Tid (minuter)</label>
-    <input type="number" id="duration" min="1" placeholder="45" />
+    <div class="row2">
+      <div>
+        <label>Tid (min)</label>
+        <input type="number" id="w-duration" min="1" placeholder="45" />
+      </div>
+      <div>
+        <label>Distans (km)</label>
+        <input type="number" id="w-distance" min="0" step="0.1" placeholder="—" />
+      </div>
+    </div>
 
-    <label>Distans (km, valfritt)</label>
-    <input type="number" id="distance" min="0" step="0.1" placeholder="1.5" />
+    <label>Anteckning</label>
+    <textarea id="w-notes" placeholder="Hur gick det?"></textarea>
 
-    <label>Anteckning (valfritt)</label>
-    <textarea id="notes" placeholder="Hur gick det?"></textarea>
+    <button class="btn btn-primary" onclick="saveWorkout()">Spara pass</button>
+    <div id="w-status" class="status"></div>
+  </div>
 
-    <button id="saveBtn" onclick="saveWorkout()">Spara pass</button>
-    <div id="status"></div>
-  </section>
-
-  <section>
-    <h2>Senaste pass</h2>
-    <div id="workoutList" class="workout-list">
+  <div class="card">
+    <div class="card-title">Senaste pass</div>
+    <div id="workout-list" class="item-list">
       <div class="empty">Laddar...</div>
     </div>
-  </section>
+  </div>
+</div>
 
-  <script>
-    const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
-    const SUPABASE_KEY = 'sb_publishable_ZcpwyXIaecTytq1cu8qX1Q_EovV5xtV'
-    const { createClient } = supabase
-    const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+<!-- ═══════════════════════════════════
+     MAT
+═══════════════════════════════════ -->
+<div id="tab-meal" class="tab-content">
+  <div class="page-title">🍽️ Mat</div>
 
-    // Sätt dagens datum som default
-    document.getElementById('date').value = new Date().toISOString().split('T')[0]
+  <div class="card" id="calorie-card" style="display:none">
+    <div class="card-title">Idag</div>
+    <div style="display:flex; justify-content:space-between; align-items:baseline;">
+      <span style="font-size:1.8rem; font-weight:700;" id="cal-today">0</span>
+      <span style="color:var(--muted); font-size:0.85rem;">kcal loggade</span>
+    </div>
+  </div>
 
-    async function saveWorkout() {
-      const btn = document.getElementById('saveBtn')
-      const status = document.getElementById('status')
-      status.className = ''
-      status.textContent = ''
+  <div class="card">
+    <div class="card-title">Logga måltid</div>
 
-      const type = document.getElementById('type').value
-      const date = document.getElementById('date').value
-      const duration = parseInt(document.getElementById('duration').value)
-      const distance = document.getElementById('distance').value
-      const notes = document.getElementById('notes').value.trim()
+    <label>Typ</label>
+    <select id="m-type">
+      <option value="frukost">🌅 Frukost</option>
+      <option value="lunch">☀️ Lunch</option>
+      <option value="middag">🌙 Middag</option>
+      <option value="mellanmål">🍎 Mellanmål</option>
+    </select>
 
-      if (!date || !duration || duration < 1) {
-        status.className = 'error'
-        status.textContent = 'Fyll i datum och tid.'
-        return
-      }
+    <label>Datum</label>
+    <input type="date" id="m-date" />
 
-      btn.disabled = true
-      btn.textContent = 'Sparar...'
+    <label>Beskriv måltiden</label>
+    <textarea id="m-desc" placeholder="T.ex. havregrynsgröt med bär och honung, kaffe med mjölk"></textarea>
 
-      const { error } = await db.from('workouts').insert({
-        type,
-        date,
-        duration_minutes: duration,
-        distance_km: distance ? parseFloat(distance) : null,
-        notes: notes || null
-      })
-
-      if (error) {
-        status.className = 'error'
-        status.textContent = 'Fel: ' + error.message
-      } else {
-        status.textContent = 'Passet sparat!'
-        document.getElementById('duration').value = ''
-        document.getElementById('distance').value = ''
-        document.getElementById('notes').value = ''
-        loadWorkouts()
-      }
-
-      btn.disabled = false
-      btn.textContent = 'Spara pass'
-    }
-
-    async function loadWorkouts() {
-      const list = document.getElementById('workoutList')
-
-      const { data, error } = await db
-        .from('workouts')
-        .select('*')
-        .order('date', { ascending: false })
-        .limit(10)
-
-      if (error) {
-        list.innerHTML = '<div class="empty" style="color:#f87171">Kunde inte ladda pass.</div>'
-        return
-      }
-
-      if (!data.length) {
-        list.innerHTML = '<div class="empty">Inga pass loggade ännu.</div>'
-        return
-      }
-
-      const icons = { simning: '🏊', löpning: '🏃', cykling: '🚴', gym: '💪', annat: '⚡' }
-
-      list.innerHTML = data.map(w => `
-        <div class="workout-card">
-          <div class="top">
-            <span class="type">${icons[w.type] || '⚡'} ${w.type.charAt(0).toUpperCase() + w.type.slice(1)}</span>
-            <span class="date">${formatDate(w.date)}</span>
-          </div>
-          <div class="meta">${w.duration_minutes} min${w.distance_km ? ' · ' + w.distance_km + ' km' : ''}</div>
-          ${w.notes ? `<div class="notes">${w.notes}</div>` : ''}
+    <div class="row2">
+      <div>
+        <label>Hälsobetyg (1–5)</label>
+        <div class="star-row" id="m-health-stars">
+          <button onclick="setHealthScore(1)">★</button>
+          <button onclick="setHealthScore(2)">★</button>
+          <button onclick="setHealthScore(3)">★</button>
+          <button onclick="setHealthScore(4)">★</button>
+          <button onclick="setHealthScore(5)">★</button>
         </div>
-      `).join('')
+      </div>
+      <div>
+        <label>Kalorier (kcal)</label>
+        <input type="number" id="m-cal" min="0" placeholder="—" />
+      </div>
+    </div>
+
+    <label>Kommentar (valfritt)</label>
+    <input type="text" id="m-comment" placeholder="Lite snabb mat idag..." />
+
+    <button class="btn btn-primary" onclick="saveMeal()">Spara måltid</button>
+    <div id="m-status" class="status"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Idag</div>
+    <div id="meal-list" class="item-list">
+      <div class="empty">Laddar...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     VIKT
+═══════════════════════════════════ -->
+<div id="tab-weight" class="tab-content">
+  <div class="page-title">⚖️ Vikt</div>
+
+  <div class="card" id="weight-progress-card" style="display:none">
+    <div class="card-title">Progress mot mål</div>
+    <div class="weight-progress">
+      <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+        <span style="font-size:0.82rem; color:var(--muted)">Startvikt</span>
+        <span style="font-size:0.82rem; color:var(--muted)">Målvikt</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="weight-bar" style="width:0%"></div>
+      </div>
+      <div class="progress-labels">
+        <span id="wl-start">—</span>
+        <span id="wl-current" style="color:var(--text); font-weight:600;">— kg nu</span>
+        <span id="wl-target">—</span>
+      </div>
+    </div>
+    <svg class="chart" id="weight-chart" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Logga vikt</div>
+    <label>Datum</label>
+    <input type="date" id="wt-date" />
+    <label>Vikt (kg)</label>
+    <input type="number" id="wt-kg" min="30" max="300" step="0.1" placeholder="80.5" />
+    <button class="btn btn-primary" onclick="saveWeight()">Spara vikt</button>
+    <div id="wt-status" class="status"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Historik</div>
+    <div id="weight-list" class="item-list">
+      <div class="empty">Laddar...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     CHECK-IN
+═══════════════════════════════════ -->
+<div id="tab-checkin" class="tab-content">
+  <div class="page-title">🌙 Check-in</div>
+
+  <div class="toggle-group">
+    <button id="ci-morning-btn" class="active" onclick="setCiMode('morning')">🌅 Morgon</button>
+    <button id="ci-evening-btn" onclick="setCiMode('evening')">🌙 Kväll</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title" id="ci-card-title">Morgon-check-in</div>
+
+    <label>Datum</label>
+    <input type="date" id="ci-date" />
+
+    <!-- Morning fields -->
+    <div id="ci-morning-fields">
+      <label>Sömntimmar</label>
+      <input type="number" id="ci-sleep-hours" min="0" max="24" step="0.5" placeholder="7.5" />
+
+      <label>Sömnkvalitet</label>
+      <div class="star-row" id="ci-sleep-quality-stars">
+        <button onclick="setSleepQuality(1)">★</button>
+        <button onclick="setSleepQuality(2)">★</button>
+        <button onclick="setSleepQuality(3)">★</button>
+        <button onclick="setSleepQuality(4)">★</button>
+        <button onclick="setSleepQuality(5)">★</button>
+      </div>
+
+      <label>Hur känns kroppen?</label>
+      <div class="star-row" id="ci-body-feeling-stars">
+        <button onclick="setBodyFeeling(1)">★</button>
+        <button onclick="setBodyFeeling(2)">★</button>
+        <button onclick="setBodyFeeling(3)">★</button>
+        <button onclick="setBodyFeeling(4)">★</button>
+        <button onclick="setBodyFeeling(5)">★</button>
+      </div>
+
+      <label>Intention för dagen (valfritt)</label>
+      <textarea id="ci-intention" placeholder="Idag ska jag..."></textarea>
+    </div>
+
+    <!-- Evening fields -->
+    <div id="ci-evening-fields" style="display:none">
+      <label>Energinivå under dagen</label>
+      <div class="star-row" id="ci-energy-stars">
+        <button onclick="setEnergy(1)">★</button>
+        <button onclick="setEnergy(2)">★</button>
+        <button onclick="setEnergy(3)">★</button>
+        <button onclick="setEnergy(4)">★</button>
+        <button onclick="setEnergy(5)">★</button>
+      </div>
+
+      <label>Hur kändes kroppen?</label>
+      <div class="star-row" id="ci-eve-body-stars">
+        <button onclick="setEveBody(1)">★</button>
+        <button onclick="setEveBody(2)">★</button>
+        <button onclick="setEveBody(3)">★</button>
+        <button onclick="setEveBody(4)">★</button>
+        <button onclick="setEveBody(5)">★</button>
+      </div>
+
+      <label>Sammanfattning (valfritt)</label>
+      <textarea id="ci-summary" placeholder="Hur gick dagen?"></textarea>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveCheckin()">Spara check-in</button>
+    <div id="ci-status" class="status"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Senaste check-ins</div>
+    <div id="checkin-list" class="item-list">
+      <div class="empty">Laddar...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PROFIL
+═══════════════════════════════════ -->
+<div id="tab-profile" class="tab-content">
+  <div class="page-title">👤 Profil</div>
+
+  <div class="card">
+    <div class="card-title">Om dig</div>
+
+    <div class="row2">
+      <div>
+        <label>Namn</label>
+        <input type="text" id="p-name" placeholder="Robert" />
+      </div>
+      <div>
+        <label>Ålder</label>
+        <input type="number" id="p-age" min="10" max="120" placeholder="40" />
+      </div>
+    </div>
+
+    <label>Konditionsnivå</label>
+    <select id="p-fitness">
+      <option value="beginner">Nybörjare</option>
+      <option value="intermediate">Medel</option>
+      <option value="advanced">Avancerad</option>
+    </select>
+
+    <label>Tillgänglig träningstid (timmar/vecka)</label>
+    <input type="number" id="p-hours" min="0" step="0.5" placeholder="5" />
+
+    <label>Eventuella skador / begränsningar</label>
+    <input type="text" id="p-injuries" placeholder="T.ex. ont i knät" />
+
+    <label>Vad motiverar dig?</label>
+    <textarea id="p-motivation" placeholder="T.ex. att slutföra triathlonstafetten med kompisar..."></textarea>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Mål</div>
+
+    <label>Primärt mål (fritext)</label>
+    <input type="text" id="p-goal" placeholder="T.ex. simma i triathlonstafett" />
+
+    <label>Måldatum</label>
+    <input type="date" id="p-goal-date" />
+
+    <div class="row2">
+      <div>
+        <label>Startvikt (kg)</label>
+        <input type="number" id="p-start-weight" min="30" step="0.1" placeholder="90" />
+      </div>
+      <div>
+        <label>Målvikt (kg)</label>
+        <input type="number" id="p-target-weight" min="30" step="0.1" placeholder="82" />
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveProfile()">Spara profil</button>
+    <div id="p-status" class="status"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     BOTTOM NAV
+═══════════════════════════════════ -->
+<nav class="bottom-nav">
+  <button id="nav-home" class="active" onclick="switchTab('home')">
+    <span>🏠</span><span>Hem</span>
+  </button>
+  <button id="nav-workout" onclick="switchTab('workout')">
+    <span>💪</span><span>Träning</span>
+  </button>
+  <button id="nav-meal" onclick="switchTab('meal')">
+    <span>🍽️</span><span>Mat</span>
+  </button>
+  <button id="nav-weight" onclick="switchTab('weight')">
+    <span>⚖️</span><span>Vikt</span>
+  </button>
+  <button id="nav-checkin" onclick="switchTab('checkin')">
+    <span>🌙</span><span>Check-in</span>
+  </button>
+  <button id="nav-profile" onclick="switchTab('profile')">
+    <span>👤</span><span>Profil</span>
+  </button>
+</nav>
+
+<script>
+  // ── Supabase ──────────────────────────────────────────────
+  const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
+  const SUPABASE_KEY = 'sb_publishable_ZcpwyXIaecTytq1cu8qX1Q_EovV5xtV'
+  const { createClient } = supabase
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+  // ── State ─────────────────────────────────────────────────
+  let profile = null
+  let currentTab = 'home'
+  let ciMode = 'morning'
+  let healthScore = 0
+  let sleepQuality = 0
+  let bodyFeeling = 0
+  let energyLevel = 0
+  let eveBodyFeeling = 0
+
+  const today = new Date().toISOString().split('T')[0]
+
+  // ── Init ──────────────────────────────────────────────────
+  async function init() {
+    setDateDefaults()
+    await loadProfile()
+    refreshTab('home')
+  }
+
+  function setDateDefaults() {
+    document.getElementById('w-date').value = today
+    document.getElementById('m-date').value = today
+    document.getElementById('wt-date').value = today
+    document.getElementById('ci-date').value = today
+  }
+
+  // ── Tab switching ─────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'))
+    document.querySelectorAll('.bottom-nav button').forEach(el => el.classList.remove('active'))
+    document.getElementById('tab-' + name).classList.add('active')
+    document.getElementById('nav-' + name).classList.add('active')
+    currentTab = name
+    refreshTab(name)
+  }
+
+  function refreshTab(name) {
+    if (name === 'home') loadHome()
+    if (name === 'workout') loadWorkouts()
+    if (name === 'meal') { loadMeals(); updateCalToday() }
+    if (name === 'weight') loadWeights()
+    if (name === 'checkin') loadCheckins()
+  }
+
+  // ── Profile ───────────────────────────────────────────────
+  async function loadProfile() {
+    const { data } = await db.from('profiles').select('*').limit(1).maybeSingle()
+    profile = data
+    if (profile) fillProfileForm(profile)
+  }
+
+  function fillProfileForm(p) {
+    if (p.name) document.getElementById('p-name').value = p.name
+    if (p.age) document.getElementById('p-age').value = p.age
+    if (p.fitness_level) document.getElementById('p-fitness').value = p.fitness_level
+    if (p.weekly_hours) document.getElementById('p-hours').value = p.weekly_hours
+    if (p.injuries) document.getElementById('p-injuries').value = p.injuries
+    if (p.motivation) document.getElementById('p-motivation').value = p.motivation
+    if (p.goal) document.getElementById('p-goal').value = p.goal
+    if (p.goal_date) document.getElementById('p-goal-date').value = p.goal_date
+    if (p.start_weight) document.getElementById('p-start-weight').value = p.start_weight
+    if (p.target_weight) document.getElementById('p-target-weight').value = p.target_weight
+  }
+
+  async function saveProfile() {
+    const data = {
+      name: val('p-name'),
+      age: intVal('p-age'),
+      fitness_level: val('p-fitness'),
+      weekly_hours: floatVal('p-hours'),
+      injuries: val('p-injuries'),
+      motivation: val('p-motivation'),
+      goal: val('p-goal'),
+      goal_date: val('p-goal-date') || null,
+      start_weight: floatVal('p-start-weight'),
+      target_weight: floatVal('p-target-weight')
     }
 
-    function formatDate(dateStr) {
-      const d = new Date(dateStr + 'T00:00:00')
-      return d.toLocaleDateString('sv-SE', { weekday: 'short', month: 'short', day: 'numeric' })
+    let error
+    if (profile?.id) {
+      ;({ error } = await db.from('profiles').update(data).eq('id', profile.id))
+    } else {
+      ;({ error } = await db.from('profiles').insert(data))
     }
 
+    if (error) return setStatus('p-status', 'Fel: ' + error.message, true)
+    setStatus('p-status', 'Sparat!')
+    await loadProfile()
+    loadHome()
+  }
+
+  // ── Home ──────────────────────────────────────────────────
+  async function loadHome() {
+    if (profile) {
+      document.getElementById('home-name').textContent = profile.name || 'Coach'
+      document.getElementById('home-goal').textContent = profile.goal || '—'
+
+      if (profile.goal_date) {
+        const days = Math.ceil((new Date(profile.goal_date) - new Date()) / 86400000)
+        document.getElementById('home-days').textContent = days > 0 ? days : '0'
+      }
+    }
+
+    const [workoutsRes, mealsRes, checkinRes] = await Promise.all([
+      db.from('workouts').select('date').order('date', { ascending: false }),
+      db.from('meals').select('date').eq('date', today),
+      db.from('checkins').select('date').eq('date', today).maybeSingle()
+    ])
+
+    const workouts = workoutsRes.data || []
+
+    // Streak
+    let streak = 0
+    const wDates = [...new Set(workouts.map(w => w.date))].sort().reverse()
+    let check = today
+    for (const d of wDates) {
+      if (d === check) { streak++; check = prevDay(check) }
+      else if (d < check) break
+    }
+    document.getElementById('home-streak').textContent = streak
+
+    // This week
+    const weekStart = getWeekStart()
+    const weekCount = workouts.filter(w => w.date >= weekStart).length
+    document.getElementById('home-week-workouts').textContent = weekCount
+
+    // Today pills
+    const todayWorkout = workouts.some(w => w.date === today)
+    const todayMeal = (mealsRes.data || []).length > 0
+    const todayCheckin = !!checkinRes.data
+
+    setPill('today-workout', 'today-workout-label', todayWorkout, 'Tränat', 'Träning')
+    setPill('today-meal', 'today-meal-label', todayMeal, 'Loggat', 'Måltider')
+    setPill('today-checkin', 'today-checkin-label', todayCheckin, 'Klart', 'Check-in')
+  }
+
+  function setPill(cardId, labelId, done, doneText, defaultText) {
+    const card = document.getElementById(cardId)
+    const label = document.getElementById(labelId)
+    if (done) { card.classList.add('done'); label.textContent = doneText }
+    else { card.classList.remove('done'); label.textContent = defaultText }
+  }
+
+  // ── Workouts ──────────────────────────────────────────────
+  async function saveWorkout() {
+    const duration = intVal('w-duration')
+    if (!duration || duration < 1) return setStatus('w-status', 'Fyll i tid.', true)
+
+    const { error } = await db.from('workouts').insert({
+      type: val('w-type'),
+      date: val('w-date'),
+      duration_minutes: duration,
+      distance_km: floatVal('w-distance'),
+      notes: val('w-notes') || null
+    })
+
+    if (error) return setStatus('w-status', 'Fel: ' + error.message, true)
+    setStatus('w-status', 'Sparat!')
+    document.getElementById('w-duration').value = ''
+    document.getElementById('w-distance').value = ''
+    document.getElementById('w-notes').value = ''
     loadWorkouts()
-  </script>
+  }
 
+  async function loadWorkouts() {
+    const { data } = await db.from('workouts').select('*').order('date', { ascending: false }).limit(15)
+    const list = document.getElementById('workout-list')
+    if (!data?.length) { list.innerHTML = '<div class="empty">Inga pass loggade ännu.</div>'; return }
+    const icons = { simning: '🏊', löpning: '🏃', cykling: '🚴', gym: '💪', annat: '⚡' }
+    list.innerHTML = data.map(w => `
+      <div class="item-card">
+        <div class="item-top">
+          <span class="item-title">${icons[w.type] || '⚡'} ${capitalize(w.type)}</span>
+          <span class="item-date">${fmtDate(w.date)}</span>
+        </div>
+        <div class="item-meta">${w.duration_minutes} min${w.distance_km ? ' · ' + w.distance_km + ' km' : ''}</div>
+        ${w.notes ? `<div class="item-note">${w.notes}</div>` : ''}
+      </div>`).join('')
+  }
+
+  // ── Meals ─────────────────────────────────────────────────
+  function setHealthScore(n) {
+    healthScore = n
+    updateStars('m-health-stars', n)
+  }
+
+  async function saveMeal() {
+    const desc = val('m-desc')
+    if (!desc) return setStatus('m-status', 'Beskriv måltiden.', true)
+
+    const { error } = await db.from('meals').insert({
+      date: val('m-date'),
+      meal_type: val('m-type'),
+      description: desc,
+      health_score: healthScore || null,
+      calories: intVal('m-cal'),
+      comment: val('m-comment') || null
+    })
+
+    if (error) return setStatus('m-status', 'Fel: ' + error.message, true)
+    setStatus('m-status', 'Sparat!')
+    document.getElementById('m-desc').value = ''
+    document.getElementById('m-cal').value = ''
+    document.getElementById('m-comment').value = ''
+    healthScore = 0
+    updateStars('m-health-stars', 0)
+    loadMeals()
+    updateCalToday()
+  }
+
+  async function loadMeals() {
+    const { data } = await db.from('meals').select('*').eq('date', today).order('created_at')
+    const list = document.getElementById('meal-list')
+    if (!data?.length) { list.innerHTML = '<div class="empty">Inga måltider loggade idag.</div>'; return }
+    const typeIcons = { frukost: '🌅', lunch: '☀️', middag: '🌙', mellanmål: '🍎' }
+    list.innerHTML = data.map(m => `
+      <div class="item-card">
+        <div class="item-top">
+          <span class="item-title">${typeIcons[m.meal_type] || '🍽️'} ${capitalize(m.meal_type || 'Måltid')}</span>
+          ${m.health_score ? `<span class="health-badge hb-${m.health_score}">${m.health_score}</span>` : ''}
+        </div>
+        <div class="item-meta">${m.description}${m.calories ? ' · ' + m.calories + ' kcal' : ''}</div>
+        ${m.comment ? `<div class="item-note">${m.comment}</div>` : ''}
+      </div>`).join('')
+  }
+
+  async function updateCalToday() {
+    const { data } = await db.from('meals').select('calories').eq('date', today)
+    if (!data) return
+    const total = data.reduce((s, m) => s + (m.calories || 0), 0)
+    document.getElementById('cal-today').textContent = total
+    document.getElementById('calorie-card').style.display = total > 0 ? 'block' : 'none'
+  }
+
+  // ── Weight ────────────────────────────────────────────────
+  async function saveWeight() {
+    const kg = floatVal('wt-kg')
+    if (!kg) return setStatus('wt-status', 'Ange vikt.', true)
+
+    const { error } = await db.from('weight_logs').upsert({
+      date: val('wt-date'),
+      weight_kg: kg
+    }, { onConflict: 'date' })
+
+    if (error) return setStatus('wt-status', 'Fel: ' + error.message, true)
+    setStatus('wt-status', 'Sparat!')
+    document.getElementById('wt-kg').value = ''
+    loadWeights()
+  }
+
+  async function loadWeights() {
+    const { data } = await db.from('weight_logs').select('*').order('date', { ascending: false }).limit(30)
+    const list = document.getElementById('weight-list')
+
+    if (!data?.length) { list.innerHTML = '<div class="empty">Ingen vikt loggad ännu.</div>'; return }
+
+    // Progress card
+    if (profile?.start_weight && profile?.target_weight) {
+      const card = document.getElementById('weight-progress-card')
+      card.style.display = 'block'
+      const current = data[0].weight_kg
+      const start = profile.start_weight
+      const target = profile.target_weight
+      const totalDiff = start - target
+      const doneDiff = start - current
+      const pct = totalDiff > 0 ? Math.max(0, Math.min(100, (doneDiff / totalDiff) * 100)) : 0
+
+      document.getElementById('weight-bar').style.width = pct + '%'
+      document.getElementById('wl-start').textContent = start + ' kg'
+      document.getElementById('wl-current').textContent = current + ' kg nu'
+      document.getElementById('wl-target').textContent = target + ' kg'
+
+      // Chart
+      drawWeightChart(data.slice().reverse().slice(-15))
+    }
+
+    list.innerHTML = data.map(w => `
+      <div class="item-card">
+        <div class="item-top">
+          <span class="item-title">⚖️ ${w.weight_kg} kg</span>
+          <span class="item-date">${fmtDate(w.date)}</span>
+        </div>
+      </div>`).join('')
+  }
+
+  function drawWeightChart(entries) {
+    if (entries.length < 2) return
+    const svg = document.getElementById('weight-chart')
+    const weights = entries.map(e => e.weight_kg)
+    const min = Math.min(...weights) - 1
+    const max = Math.max(...weights) + 1
+    const W = 300, H = 100
+    const pts = entries.map((e, i) => {
+      const x = (i / (entries.length - 1)) * W
+      const y = H - ((e.weight_kg - min) / (max - min)) * H
+      return `${x},${y}`
+    })
+    svg.innerHTML = `
+      <polyline points="${pts.join(' ')}" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${pts.map((p, i) => `<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="3" fill="#2563eb"/>`).join('')}
+    `
+  }
+
+  // ── Check-in ──────────────────────────────────────────────
+  function setCiMode(mode) {
+    ciMode = mode
+    document.getElementById('ci-morning-btn').classList.toggle('active', mode === 'morning')
+    document.getElementById('ci-evening-btn').classList.toggle('active', mode === 'evening')
+    document.getElementById('ci-morning-fields').style.display = mode === 'morning' ? 'block' : 'none'
+    document.getElementById('ci-evening-fields').style.display = mode === 'evening' ? 'block' : 'none'
+    document.getElementById('ci-card-title').textContent = mode === 'morning' ? 'Morgon-check-in' : 'Kväll-check-in'
+  }
+
+  function setSleepQuality(n) { sleepQuality = n; updateStars('ci-sleep-quality-stars', n) }
+  function setBodyFeeling(n) { bodyFeeling = n; updateStars('ci-body-feeling-stars', n) }
+  function setEnergy(n) { energyLevel = n; updateStars('ci-energy-stars', n) }
+  function setEveBody(n) { eveBodyFeeling = n; updateStars('ci-eve-body-stars', n) }
+
+  async function saveCheckin() {
+    const date = val('ci-date')
+    const { data: existing } = await db.from('checkins').select('id').eq('date', date).maybeSingle()
+
+    let payload = { date }
+
+    if (ciMode === 'morning') {
+      payload.sleep_hours = floatVal('ci-sleep-hours')
+      payload.sleep_quality = sleepQuality || null
+      payload.body_feeling = bodyFeeling || null
+      payload.morning_intention = val('ci-intention') || null
+    } else {
+      payload.energy_level = energyLevel || null
+      payload.evening_body_feeling = eveBodyFeeling || null
+      payload.evening_summary = val('ci-summary') || null
+    }
+
+    let error
+    if (existing) {
+      ;({ error } = await db.from('checkins').update(payload).eq('id', existing.id))
+    } else {
+      ;({ error } = await db.from('checkins').insert(payload))
+    }
+
+    if (error) return setStatus('ci-status', 'Fel: ' + error.message, true)
+    setStatus('ci-status', 'Sparat!')
+    loadCheckins()
+  }
+
+  async function loadCheckins() {
+    const { data } = await db.from('checkins').select('*').order('date', { ascending: false }).limit(7)
+    const list = document.getElementById('checkin-list')
+    if (!data?.length) { list.innerHTML = '<div class="empty">Inga check-ins än.</div>'; return }
+    list.innerHTML = data.map(c => {
+      const parts = []
+      if (c.sleep_hours != null) parts.push(`😴 ${c.sleep_hours}h`)
+      if (c.sleep_quality) parts.push(`Sömn ${stars(c.sleep_quality)}`)
+      if (c.body_feeling) parts.push(`Kropp ${stars(c.body_feeling)}`)
+      if (c.energy_level) parts.push(`Energi ${stars(c.energy_level)}`)
+      return `<div class="item-card">
+        <div class="item-top">
+          <span class="item-title">🌙 Check-in</span>
+          <span class="item-date">${fmtDate(c.date)}</span>
+        </div>
+        <div class="item-meta">${parts.join(' · ') || '—'}</div>
+        ${c.morning_intention ? `<div class="item-note">☀️ ${c.morning_intention}</div>` : ''}
+        ${c.evening_summary ? `<div class="item-note">🌙 ${c.evening_summary}</div>` : ''}
+      </div>`
+    }).join('')
+  }
+
+  // ── Export ────────────────────────────────────────────────
+  async function exportContext() {
+    const output = document.getElementById('export-output')
+    const status = document.getElementById('export-status')
+    status.textContent = 'Genererar...'
+    status.className = 'status'
+
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const since = sevenDaysAgo.toISOString().split('T')[0]
+
+    const [workoutsRes, mealsRes, weightsRes, checkinsRes] = await Promise.all([
+      db.from('workouts').select('*').gte('date', since).order('date'),
+      db.from('meals').select('*').gte('date', since).order('date').order('created_at'),
+      db.from('weight_logs').select('*').order('date', { ascending: false }).limit(10),
+      db.from('checkins').select('*').gte('date', since).order('date')
+    ])
+
+    const p = profile || {}
+    const latest = weightsRes.data?.[0]
+
+    let text = `=== PERSONAL COACH KONTEXT ===\nDatum: ${today}\n\n`
+
+    text += `PROFIL\n`
+    text += `Namn: ${p.name || '—'}, ${p.age || '—'} år\n`
+    text += `Konditionsnivå: ${p.fitness_level || '—'}\n`
+    text += `Tillgänglig träningstid: ${p.weekly_hours || '—'} timmar/vecka\n`
+    if (p.injuries) text += `Skador/begränsningar: ${p.injuries}\n`
+    if (p.motivation) text += `Motivation: ${p.motivation}\n`
+
+    text += `\nMÅL\n`
+    text += `${p.goal || '—'}\n`
+    if (p.goal_date) {
+      const days = Math.ceil((new Date(p.goal_date) - new Date()) / 86400000)
+      text += `Måldatum: ${p.goal_date} (${days} dagar kvar)\n`
+    }
+    if (p.start_weight) text += `Vikt: Start ${p.start_weight} kg → Mål ${p.target_weight || '—'} kg → Nu ${latest?.weight_kg || '—'} kg\n`
+
+    text += `\nTRÄNING (senaste 7 dagarna)\n`
+    const workouts = workoutsRes.data || []
+    if (workouts.length) {
+      workouts.forEach(w => {
+        text += `${w.date}: ${capitalize(w.type)} ${w.duration_minutes} min${w.distance_km ? ', ' + w.distance_km + ' km' : ''}${w.notes ? ' – ' + w.notes : ''}\n`
+      })
+    } else { text += `Inga träningspass loggade.\n` }
+
+    text += `\nMAT (senaste 7 dagarna)\n`
+    const meals = mealsRes.data || []
+    if (meals.length) {
+      meals.forEach(m => {
+        text += `${m.date} ${capitalize(m.meal_type || 'Måltid')}: ${m.description}${m.health_score ? ' [betyg ' + m.health_score + '/5]' : ''}${m.calories ? ' ' + m.calories + ' kcal' : ''}${m.comment ? ' – ' + m.comment : ''}\n`
+      })
+    } else { text += `Inga måltider loggade.\n` }
+
+    text += `\nVIKTUTVECKLING\n`
+    const weights = weightsRes.data || []
+    if (weights.length) {
+      weights.slice(0, 7).reverse().forEach(w => {
+        text += `${w.date}: ${w.weight_kg} kg\n`
+      })
+    } else { text += `Ingen vikt loggad.\n` }
+
+    text += `\nCHECK-INS (senaste 7 dagarna)\n`
+    const checkins = checkinsRes.data || []
+    if (checkins.length) {
+      checkins.forEach(c => {
+        text += `${c.date}: Sömn ${c.sleep_hours || '—'}h (kvalitet ${c.sleep_quality || '—'}/5), kropp ${c.body_feeling || '—'}/5`
+        if (c.morning_intention) text += `, intention: ${c.morning_intention}`
+        if (c.energy_level) text += `, energi ${c.energy_level}/5`
+        if (c.evening_summary) text += `, kväll: ${c.evening_summary}`
+        text += '\n'
+      })
+    } else { text += `Inga check-ins loggade.\n` }
+
+    output.textContent = text
+    output.style.display = 'block'
+
+    try {
+      await navigator.clipboard.writeText(text)
+      status.textContent = '✓ Kopierat till urklipp — klistra in i Claude!'
+    } catch {
+      status.textContent = 'Markera texten ovan och kopiera manuellt.'
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function val(id) { return document.getElementById(id).value.trim() }
+  function intVal(id) { const v = parseInt(document.getElementById(id).value); return isNaN(v) ? null : v }
+  function floatVal(id) { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? null : v }
+
+  function setStatus(id, msg, isError = false) {
+    const el = document.getElementById(id)
+    el.textContent = msg
+    el.className = 'status' + (isError ? ' error' : '')
+    if (!isError) setTimeout(() => { el.textContent = '' }, 3000)
+  }
+
+  function updateStars(containerId, n) {
+    document.querySelectorAll('#' + containerId + ' button').forEach((btn, i) => {
+      btn.classList.toggle('on', i < n)
+    })
+  }
+
+  function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
+
+  function fmtDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00')
+    return d.toLocaleDateString('sv-SE', { weekday: 'short', month: 'short', day: 'numeric' })
+  }
+
+  function stars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n) }
+
+  function prevDay(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00')
+    d.setDate(d.getDate() - 1)
+    return d.toISOString().split('T')[0]
+  }
+
+  function getWeekStart() {
+    const d = new Date()
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+    d.setDate(diff)
+    return d.toISOString().split('T')[0]
+  }
+
+  init()
+</script>
 </body>
 </html>
