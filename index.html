@@ -997,7 +997,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-08 v14'
+  const APP_VERSION = '2026-06-09 v16'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1481,6 +1481,8 @@
 
     if (!data?.length) { list.innerHTML = '<div class="empty">Ingen vikt loggad ännu.</div>'; return }
 
+    document.getElementById('wt-kg').placeholder = data[0].weight_kg
+
     // Progress card
     if (profile?.start_weight && profile?.target_weight) {
       const card = document.getElementById('weight-progress-card')
@@ -1957,7 +1959,7 @@
     const startDate = new Date(`${today}T${isSecond ? '12' : '08'}:00:00`)
     const { data: existing } = await db.from('workouts').select('strava_activity_id').eq('id', workoutId).maybeSingle()
 
-    let activity
+    let activityId
     if (existing?.strava_activity_id) {
       const putResp = await fetch(`https://www.strava.com/api/v3/activities/${existing.strava_activity_id}`, {
         method: 'PUT',
@@ -1973,7 +1975,7 @@
       })
       const putData = await putResp.json()
       if (!putResp.ok) throw new Error(putData.message || putResp.status)
-      activity = putData
+      activityId = existing.strava_activity_id
     } else {
       const postResp = await fetch('https://www.strava.com/api/v3/activities', {
         method: 'POST',
@@ -1993,12 +1995,28 @@
       })
       const rawText = await postResp.text()
       if (!postResp.ok) throw new Error(`HTTP ${postResp.status}: ${rawText}`)
-      activity = JSON.parse(rawText)
-      if (activity.id) {
-        await db.from('workouts').update({ strava_activity_id: activity.id }).eq('id', workoutId)
+      const created = JSON.parse(rawText)
+      activityId = created.id
+      if (activityId) {
+        await db.from('workouts').update({ strava_activity_id: activityId }).eq('id', workoutId)
       }
     }
-    return activity?.calories || (activity?.kilojoules ? Math.round(activity.kilojoules * 0.239) : null)
+
+    // Hämta aktiviteten för att få Stravas beräknade kalorier
+    if (activityId) {
+      const getResp = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (getResp.ok) {
+        const detail = await getResp.json()
+        if (detail.calories > 0) return detail.calories
+        if (detail.kilojoules > 0) return Math.round(detail.kilojoules * 0.239)
+      }
+    }
+
+    // Fallback-estimering baserat på typ och tid
+    const kcalPerMin = type === 'pendling-cykling' ? 5.5 : 3.5
+    return Math.round(kcalPerMin * totalMin)
   }
 
   // ── RPE / Strava sync ────────────────────────────────────
