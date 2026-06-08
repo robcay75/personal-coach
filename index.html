@@ -1000,7 +1000,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v22'
+  const APP_VERSION = '2026-06-09 v23'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1861,7 +1861,7 @@
   function prevDay(dateStr) {
     const d = new Date(dateStr + 'T00:00:00')
     d.setDate(d.getDate() - 1)
-    return d.toISOString().split('T')[0]
+    return localDate(d)
   }
 
   function getWeekStart() {
