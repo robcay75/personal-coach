@@ -1005,7 +1005,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v24'
+  const APP_VERSION = '2026-06-09 v25'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1273,12 +1273,14 @@
     const count = existing ? (parseInt(existing.notes?.match(/(\d+) t\/r/)?.[1] || 1) + 1) : 1
     const totalMin = defaults.min * 2 * count
     const totalKm  = Math.round(defaults.km * 2 * count * 10) / 10
+    const kcalEstimate = Math.round((dbType === 'pendling-cykling' ? 5.5 : 3.5) * totalMin)
 
     let error
     if (existing) {
       ;({ error } = await db.from('workouts').update({
         duration_minutes: totalMin,
         distance_km: totalKm,
+        calories: kcalEstimate,
         notes: `${count} t/r`,
         perceived_exertion: commuteRpe
       }).eq('id', existing.id))
@@ -1287,30 +1289,24 @@
         type: dbType, date: today,
         duration_minutes: totalMin,
         distance_km: totalKm,
+        calories: kcalEstimate,
         notes: `${count} t/r`,
         perceived_exertion: commuteRpe
       }))
     }
 
     if (error) return setStatus('commute-status', 'Fel: ' + error.message, true)
-    setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat! ${count} t/r (${totalKm} km, ${totalMin} min)`)
+    setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat! ${count} t/r · ${kcalEstimate} kcal`)
 
     const { data: saved } = await db.from('workouts').select('id, strava_activity_id').eq('date', today).eq('type', dbType).maybeSingle()
     if (saved) {
       const token = await getStravaToken()
-      if (!token) {
-        setStatus('commute-status', '⚠️ Loggat lokalt — Strava inte kopplat eller token utgången.', true)
-      } else {
+      if (token) {
         try {
-          const kcal = await pushToStrava(token, saved.id, dbType, count, totalMin, totalKm)
-          if (kcal) {
-            await db.from('workouts').update({ calories: kcal }).eq('id', saved.id)
-            setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat & synkat! ${count} t/r · ${kcal} kcal`)
-          } else {
-            setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat & synkat till Strava! ${count} t/r`)
-          }
+          await pushToStrava(token, saved.id, dbType, count, totalMin, totalKm)
+          setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat & synkat! ${count} t/r · ${kcalEstimate} kcal`)
         } catch (e) {
-          setStatus('commute-status', `⚠️ Loggat lokalt men Strava misslyckades: ${e.message}`, true)
+          setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat! ${count} t/r · ${kcalEstimate} kcal (Strava: ${e.message})`, true)
         }
       }
     }
@@ -2099,7 +2095,7 @@
       date: a.start_date_local.split('T')[0],
       duration_minutes: Math.round(a.elapsed_time / 60),
       distance_km: a.distance ? Math.round(a.distance / 100) / 10 : null,
-      calories: a.calories || null,
+      calories: a.calories > 0 ? a.calories : a.kilojoules > 0 ? Math.round(a.kilojoules * 0.239) : null,
       strava_activity_id: a.id,
       notes: a.name || null
     }))
@@ -2120,9 +2116,9 @@
 
   async function fillMissingCalories(token) {
     const { data: missing } = await db.from('workouts')
-      .select('id, strava_activity_id')
+      .select('id, strava_activity_id, type, duration_minutes')
       .not('strava_activity_id', 'is', null)
-      .is('calories', null)
+      .or('calories.is.null,calories.eq.0')
 
     if (!missing?.length) {
       setStatus('strava-sync-status', `✓ Synkat och kalorier uppdaterade`)
@@ -2136,9 +2132,13 @@
       })
       if (!resp.ok) continue
       const detail = await resp.json()
-      const kcal = detail.calories > 0 ? detail.calories
-                 : detail.kilojoules > 0 ? Math.round(detail.kilojoules * 0.239)
-                 : null
+      let kcal = detail.calories > 0 ? detail.calories
+               : detail.kilojoules > 0 ? Math.round(detail.kilojoules * 0.239)
+               : null
+      if (!kcal && w.duration_minutes > 0) {
+        const kcalPerMin = w.type === 'pendling-cykling' ? 5.5 : w.type === 'pendling-promenad' ? 3.5 : 7
+        kcal = Math.round(kcalPerMin * w.duration_minutes)
+      }
       if (kcal) {
         await db.from('workouts').update({ calories: kcal }).eq('id', w.id)
         updated++
