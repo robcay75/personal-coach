@@ -877,6 +877,13 @@
     <button class="btn btn-primary" onclick="saveProfile()">Spara profil</button>
     <div id="p-status" class="status"></div>
   </div>
+
+  <div class="card">
+    <div class="card-title">Strava</div>
+    <p style="font-size:0.85rem; color:var(--muted); margin-bottom:10px;">Koppla ditt Strava-konto för att automatiskt synka pendlingsresor.</p>
+    <div id="strava-status" style="font-size:0.85rem; margin-bottom:10px;">Kontrollerar...</div>
+    <button id="strava-btn" class="btn btn-ghost" onclick="connectStrava()">🔗 Koppla Strava</button>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════
@@ -910,6 +917,11 @@
   const { createClient } = supabase
   const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
+  // ── Strava ────────────────────────────────────────────────
+  const STRAVA_CLIENT_ID     = '256334'
+  const STRAVA_CLIENT_SECRET = '5b2aff384b879707ac27575f77f32b2f389e0abe'
+  const STRAVA_REDIRECT_URI  = 'https://robcay75.github.io/personal-coach/'
+
   // ── State ─────────────────────────────────────────────────
   let profile = null
   let currentTab = 'home'
@@ -925,8 +937,10 @@
   // ── Init ──────────────────────────────────────────────────
   async function init() {
     setDateDefaults()
+    await handleStravaCallback()
     await loadProfile()
     refreshTab('home')
+    loadStravaStatus()
   }
 
   function setDateDefaults() {
@@ -1176,7 +1190,22 @@
     }
 
     if (error) return setStatus('commute-status', 'Fel: ' + error.message, true)
-    setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat! ${count} t/r idag (${totalKm} km, ${totalMin} min)`)
+    setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat! ${count} t/r (${totalKm} km, ${totalMin} min)`)
+
+    // Hämta ID på det sparade passet och pusha till Strava
+    const { data: saved } = await db.from('workouts').select('id, strava_activity_id').eq('date', today).eq('type', dbType).maybeSingle()
+    if (saved) {
+      const token = await getStravaToken()
+      if (token) {
+        try {
+          await pushToStrava(token, saved.id, dbType, count, totalMin, totalKm)
+          setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat & synkat till Strava! ${count} t/r`)
+        } catch (e) {
+          setStatus('commute-status', `Loggat lokalt men Strava-sync misslyckades: ${e.message}`)
+        }
+      }
+    }
+
     loadCommuteCounts()
     loadWorkouts()
   }
@@ -1584,6 +1613,120 @@
     const diff = d.getDate() - day + (day === 0 ? -6 : 1)
     d.setDate(diff)
     return d.toISOString().split('T')[0]
+  }
+
+  // ── Strava OAuth ──────────────────────────────────────────
+  function connectStrava() {
+    const url = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT_URI)}&approval_prompt=force&scope=activity:write`
+    window.location.href = url
+  }
+
+  async function handleStravaCallback() {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    if (!code) return
+
+    window.history.replaceState({}, '', window.location.pathname)
+
+    const resp = await fetch('https://www.strava.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: STRAVA_CLIENT_ID,
+        client_secret: STRAVA_CLIENT_SECRET,
+        code,
+        grant_type: 'authorization_code'
+      })
+    })
+    const data = await resp.json()
+    if (!data.access_token) { alert('Strava-koppling misslyckades: ' + (data.message || 'okänt fel')); return }
+
+    await db.from('strava_tokens').delete().gte('id', '00000000-0000-0000-0000-000000000000')
+    await db.from('strava_tokens').insert({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: data.expires_at,
+      athlete_id: data.athlete?.id,
+      athlete_name: data.athlete ? `${data.athlete.firstname} ${data.athlete.lastname}` : null
+    })
+  }
+
+  async function getStravaToken() {
+    const { data } = await db.from('strava_tokens').select('*').limit(1).maybeSingle()
+    if (!data) return null
+
+    if (data.expires_at < Math.floor(Date.now() / 1000) - 60) {
+      const resp = await fetch('https://www.strava.com/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: STRAVA_CLIENT_ID,
+          client_secret: STRAVA_CLIENT_SECRET,
+          refresh_token: data.refresh_token,
+          grant_type: 'refresh_token'
+        })
+      })
+      const refreshed = await resp.json()
+      if (!refreshed.access_token) return null
+      await db.from('strava_tokens').update({
+        access_token: refreshed.access_token,
+        refresh_token: refreshed.refresh_token,
+        expires_at: refreshed.expires_at
+      }).eq('id', data.id)
+      return refreshed.access_token
+    }
+    return data.access_token
+  }
+
+  async function loadStravaStatus() {
+    const { data } = await db.from('strava_tokens').select('athlete_name').limit(1).maybeSingle()
+    const el = document.getElementById('strava-status')
+    const btn = document.getElementById('strava-btn')
+    if (data) {
+      el.textContent = `✓ Kopplad${data.athlete_name ? ' som ' + data.athlete_name : ''}`
+      el.style.color = 'var(--green)'
+      btn.textContent = 'Koppla om Strava'
+    } else {
+      el.textContent = 'Inte kopplat'
+      el.style.color = 'var(--muted)'
+      btn.textContent = '🔗 Koppla Strava'
+    }
+  }
+
+  async function pushToStrava(token, workoutId, type, count, totalMin, totalKm) {
+    const stravaType = type === 'pendling-cykling' ? 'Ride' : 'Walk'
+    const name = type === 'pendling-cykling' ? `🚴 Pendling cykel` : `🚶 Pendling promenad`
+
+    const startDate = new Date(`${today}T08:00:00`)
+    const body = {
+      name,
+      type: stravaType,
+      start_date_local: startDate.toISOString(),
+      elapsed_time: totalMin * 60,
+      distance: totalKm * 1000,
+      description: `${count} t/r loggat via Personal Coach`,
+      hide_from_home: true
+    }
+
+    const { data: existing } = await db.from('workouts').select('strava_activity_id').eq('id', workoutId).maybeSingle()
+
+    if (existing?.strava_activity_id) {
+      await fetch(`https://www.strava.com/api/v3/activities/${existing.strava_activity_id}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description: body.description, hide_from_home: true })
+      })
+    } else {
+      const resp = await fetch('https://www.strava.com/api/v3/activities', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      const activity = await resp.json()
+      if (activity.id) {
+        await db.from('workouts').update({ strava_activity_id: activity.id }).eq('id', workoutId)
+      }
+    }
   }
 
   // ── Målvikt-förslag ───────────────────────────────────────
