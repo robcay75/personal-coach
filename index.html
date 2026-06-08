@@ -351,6 +351,23 @@
       display: none;
     }
 
+    /* ── Weight suggestions ── */
+    .suggestion-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--text);
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .suggestion-btn:hover { border-color: var(--accent); }
+    .suggestion-btn.selected { border-color: var(--accent); background: #1e3a8a22; }
+    .suggestion-btn .sug-title { font-weight: 600; font-size: 0.95rem; }
+    .suggestion-btn .sug-detail { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
     /* ── Misc ── */
     .section-divider {
       height: 1px;
@@ -694,12 +711,17 @@
     <div class="row2">
       <div>
         <label>Startvikt (kg)</label>
-        <input type="number" id="p-start-weight" min="30" step="0.1" placeholder="90" />
+        <input type="number" id="p-start-weight" min="30" step="0.1" placeholder="90" oninput="updateWeightSuggestions()" />
       </div>
       <div>
         <label>Målvikt (kg)</label>
         <input type="number" id="p-target-weight" min="30" step="0.1" placeholder="82" />
       </div>
+    </div>
+
+    <div id="weight-suggestions" style="display:none; margin-top:12px;">
+      <div style="font-size:0.82rem; color:var(--muted); margin-bottom:8px;">Förslag baserat på måldatum och startvikt:</div>
+      <div style="display:flex; flex-direction:column; gap:8px;" id="weight-suggestion-list"></div>
     </div>
 
     <button class="btn btn-primary" onclick="saveProfile()">Spara profil</button>
@@ -1232,6 +1254,45 @@
     d.setDate(diff)
     return d.toISOString().split('T')[0]
   }
+
+  // ── Målvikt-förslag ───────────────────────────────────────
+  function updateWeightSuggestions() {
+    const startWeight = floatVal('p-start-weight')
+    const goalDate = val('p-goal-date')
+    const box = document.getElementById('weight-suggestions')
+    const list = document.getElementById('weight-suggestion-list')
+
+    if (!startWeight || !goalDate) { box.style.display = 'none'; return }
+
+    const weeks = Math.max(1, Math.round((new Date(goalDate) - new Date()) / (7 * 86400000)))
+
+    const tempos = [
+      { label: 'Lugnt', kg: 0.25, desc: 'Hållbart och skonsamt, minimal risk för muskelmassa.' },
+      { label: 'Lagom', kg: 0.5,  desc: 'Rekommenderad takt — god balans mellan tempo och hälsa.' },
+      { label: 'Aggressivt', kg: 0.75, desc: 'Snabbt resultat men kräver disciplin och kan vara tufft.' },
+    ]
+
+    list.innerHTML = tempos.map(t => {
+      const loss = Math.round(t.kg * weeks * 10) / 10
+      const target = Math.round((startWeight - loss) * 10) / 10
+      if (target < 40) return ''
+      return `<button class="suggestion-btn" onclick="selectWeightSuggestion(${target}, this)">
+        <div class="sug-title">${t.label} — ${target} kg <span style="color:var(--muted); font-weight:400">(−${loss} kg)</span></div>
+        <div class="sug-detail">${t.kg} kg/vecka · ${weeks} veckor · ${t.desc}</div>
+      </button>`
+    }).join('')
+
+    box.style.display = 'block'
+  }
+
+  function selectWeightSuggestion(target, btn) {
+    document.getElementById('p-target-weight').value = target
+    document.querySelectorAll('.suggestion-btn').forEach(b => b.classList.remove('selected'))
+    btn.classList.add('selected')
+  }
+
+  // Uppdatera förslag även när måldatum ändras
+  document.getElementById('p-goal-date').addEventListener('change', updateWeightSuggestions)
 
   // Scrolla fältet i vy när tangentbordet öppnas på mobil
   document.querySelectorAll('input, select, textarea').forEach(el => {
