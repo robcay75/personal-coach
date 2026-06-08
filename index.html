@@ -820,6 +820,7 @@
 
   <div class="card">
     <div class="card-title" id="ci-card-title">Morgon-check-in</div>
+    <div id="ci-existing-note" style="display:none; font-size:0.8rem; color:var(--accent); margin-bottom:10px;">Uppdaterar befintlig check-in</div>
 
     <label>Datum</label>
     <input type="date" id="ci-date" />
@@ -996,7 +997,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-08 v13'
+  const APP_VERSION = '2026-06-08 v14'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1055,7 +1056,7 @@
     if (name === 'workout') { loadWorkouts(); loadCommuteCounts() }
     if (name === 'meal') { loadMeals(); updateCalToday(); drawCalorieChart() }
     if (name === 'weight') loadWeights()
-    if (name === 'checkin') { loadCheckins(); drawWellbeingChart() }
+    if (name === 'checkin') { loadCheckins(); drawWellbeingChart(); loadCheckinForm() }
     if (name === 'profile') updateWeightSuggestions()
   }
 
@@ -1693,6 +1694,22 @@
     if (error) return setStatus('ci-status', 'Fel: ' + error.message, true)
     setStatus('ci-status', 'Sparat!')
     loadCheckins()
+  }
+
+  async function loadCheckinForm() {
+    const { data } = await db.from('checkins').select('*').eq('date', today).maybeSingle()
+    const note = document.getElementById('ci-existing-note')
+    if (!data) { note.style.display = 'none'; return }
+    note.style.display = 'block'
+
+    if (data.sleep_hours != null) document.getElementById('ci-sleep-hours').value = data.sleep_hours
+    if (data.sleep_quality)       setSleepQuality(data.sleep_quality)
+    if (data.body_feeling)        setBodyFeeling(data.body_feeling)
+    if (data.morning_intention)   document.getElementById('ci-intention').value = data.morning_intention
+
+    if (data.energy_level)           setEnergy(data.energy_level)
+    if (data.evening_body_feeling)   setEveBody(data.evening_body_feeling)
+    if (data.evening_summary)        document.getElementById('ci-summary').value = data.evening_summary
   }
 
   async function loadCheckins() {
