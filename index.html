@@ -1711,7 +1711,8 @@
       distance: totalKm * 1000,
       description: `${count} t/r loggat via Personal Coach`,
       commute: true,
-      hide_from_home: true
+      hide_from_home: true,
+      visibility: 'only_me'
     }
 
     const { data: existing } = await db.from('workouts').select('strava_activity_id').eq('id', workoutId).maybeSingle()
