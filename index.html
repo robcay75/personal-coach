@@ -683,6 +683,15 @@
     <div id="m-status" class="status"></div>
   </div>
 
+  <div class="card" id="cal-chart-card" style="display:none">
+    <div class="card-title">Kaloribalans — 7 dagar</div>
+    <svg id="cal-chart" width="100%" height="130" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
+    <div style="display:flex; gap:12px; margin-top:6px; font-size:0.72rem; color:var(--muted);">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--green);border-radius:2px;display:inline-block"></span>Under mål</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--red);border-radius:2px;display:inline-block"></span>Över mål</span>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">Idag</div>
     <div id="meal-list" class="item-list">
@@ -804,6 +813,16 @@
 
     <button class="btn btn-primary" onclick="saveCheckin()">Spara check-in</button>
     <div id="ci-status" class="status"></div>
+  </div>
+
+  <div class="card" id="wellbeing-chart-card" style="display:none">
+    <div class="card-title">Välmående — 14 dagar</div>
+    <svg id="wellbeing-chart" width="100%" height="120" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
+    <div style="display:flex; gap:12px; margin-top:6px; font-size:0.72rem; color:var(--muted); flex-wrap:wrap;">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:#60a5fa;display:inline-block;border-radius:2px"></span>Sömnkvalitet</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:#4ade80;display:inline-block;border-radius:2px"></span>Kropp</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:#fbbf24;display:inline-block;border-radius:2px"></span>Energi</span>
+    </div>
   </div>
 
   <div class="card">
@@ -968,9 +987,9 @@
   function refreshTab(name) {
     if (name === 'home') loadHome()
     if (name === 'workout') { loadWorkouts(); loadCommuteCounts() }
-    if (name === 'meal') { loadMeals(); updateCalToday() }
+    if (name === 'meal') { loadMeals(); updateCalToday(); drawCalorieChart() }
     if (name === 'weight') loadWeights()
-    if (name === 'checkin') loadCheckins()
+    if (name === 'checkin') { loadCheckins(); drawWellbeingChart() }
     if (name === 'profile') updateWeightSuggestions()
   }
 
@@ -1413,21 +1432,144 @@
   }
 
   function drawWeightChart(entries) {
-    if (entries.length < 2) return
+    if (entries.length < 1) return
     const svg = document.getElementById('weight-chart')
-    const weights = entries.map(e => e.weight_kg)
-    const min = Math.min(...weights) - 1
-    const max = Math.max(...weights) + 1
     const W = 300, H = 100
-    const pts = entries.map((e, i) => {
-      const x = (i / (entries.length - 1)) * W
-      const y = H - ((e.weight_kg - min) / (max - min)) * H
-      return `${x},${y}`
-    })
+
+    // Beräkna prognospunkt
+    let allWeights = entries.map(e => e.weight_kg)
+    let prognosisPoint = null
+    if (profile?.target_weight && profile?.goal_date) {
+      allWeights.push(profile.target_weight)
+      prognosisPoint = profile.target_weight
+    }
+
+    const minW = Math.min(...allWeights) - 1
+    const maxW = Math.max(...allWeights) + 1
+
+    const toX = (i, total) => (i / Math.max(total - 1, 1)) * W
+    const toY = (w) => H - ((w - minW) / (maxW - minW)) * H
+
+    const pts = entries.map((e, i) => `${toX(i, entries.length)},${toY(e.weight_kg)}`)
+
+    let progLine = ''
+    if (prognosisPoint !== null && entries.length > 0) {
+      const lastX = toX(entries.length - 1, entries.length)
+      const lastY = toY(entries[entries.length - 1].weight_kg)
+      const targetY = toY(prognosisPoint)
+      progLine = `<line x1="${lastX}" y1="${lastY}" x2="${W}" y2="${targetY}" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.7"/>`
+    }
+
     svg.innerHTML = `
+      ${progLine}
       <polyline points="${pts.join(' ')}" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      ${pts.map((p, i) => `<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="3" fill="#2563eb"/>`).join('')}
+      ${entries.map((e, i) => `<circle cx="${toX(i, entries.length)}" cy="${toY(e.weight_kg)}" r="3" fill="#2563eb"/>`).join('')}
     `
+  }
+
+  async function drawCalorieChart() {
+    const target = calcCalorieTarget()
+    const sevenAgo = new Date(); sevenAgo.setDate(sevenAgo.getDate() - 6)
+    const since = localDate(sevenAgo)
+
+    const [mealsRes, workoutsRes] = await Promise.all([
+      db.from('meals').select('date, calories').gte('date', since),
+      db.from('workouts').select('date, duration_minutes, type').gte('date', since)
+    ])
+
+    const days = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i)
+      days.push(localDate(d))
+    }
+
+    const eaten = {}
+    const burned = {}
+    ;(mealsRes.data || []).forEach(m => { eaten[m.date] = (eaten[m.date] || 0) + (m.calories || 0) })
+    ;(workoutsRes.data || []).filter(w => !w.type.startsWith('pendling')).forEach(w => {
+      burned[w.date] = (burned[w.date] || 0) + Math.round(w.duration_minutes * 7)
+    })
+
+    const hasData = days.some(d => eaten[d])
+    const card = document.getElementById('cal-chart-card')
+    card.style.display = hasData ? 'block' : 'none'
+    if (!hasData) return
+
+    const W = 300, H = 110, padB = 20, padT = 6
+    const chartH = H - padB - padT
+    const barW = W / days.length
+    const maxCal = Math.max(target || 2000, ...days.map(d => (eaten[d] || 0)))
+    const svg = document.getElementById('cal-chart')
+
+    const bars = days.map((d, i) => {
+      const kcal = eaten[d] || 0
+      const eff = target ? target + (burned[d] || 0) : 0
+      const over = eff > 0 && kcal > eff
+      const h = kcal > 0 ? Math.max(4, Math.round((kcal / maxCal) * chartH)) : 2
+      const x = i * barW + 2
+      const y = padT + chartH - h
+      const isToday = d === today
+      const dayLabel = new Date(d + 'T00:00:00').toLocaleDateString('sv-SE', { weekday: 'narrow' })
+      return `
+        <rect x="${x}" y="${y}" width="${barW - 4}" height="${h}" rx="3"
+          fill="${kcal === 0 ? 'var(--surface2)' : over ? 'var(--red)' : 'var(--green)'}"
+          opacity="${isToday ? 1 : 0.7}"/>
+        <text x="${x + (barW - 4) / 2}" y="${H - 4}" text-anchor="middle"
+          font-size="9" fill="${isToday ? 'var(--text)' : 'var(--dim)'}">${dayLabel}</text>
+        ${kcal > 0 ? `<text x="${x + (barW-4)/2}" y="${y - 2}" text-anchor="middle" font-size="8" fill="var(--muted)">${kcal}</text>` : ''}`
+    }).join('')
+
+    const targetLine = target ? (() => {
+      const ty = padT + chartH - Math.round((target / maxCal) * chartH)
+      return `<line x1="0" y1="${ty}" x2="${W}" y2="${ty}" stroke="#2563eb" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+              <text x="${W - 2}" y="${ty - 2}" text-anchor="end" font-size="8" fill="#2563eb" opacity="0.8">${target}</text>`
+    })() : ''
+
+    svg.innerHTML = bars + targetLine
+  }
+
+  async function drawWellbeingChart() {
+    const fourteenAgo = new Date(); fourteenAgo.setDate(fourteenAgo.getDate() - 13)
+    const since = localDate(fourteenAgo)
+    const { data } = await db.from('checkins').select('date, sleep_quality, body_feeling, energy_level').gte('date', since).order('date')
+
+    const card = document.getElementById('wellbeing-chart-card')
+    if (!data?.length) { card.style.display = 'none'; return }
+    card.style.display = 'block'
+
+    const days = []
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i)
+      days.push(localDate(d))
+    }
+
+    const byDate = {}
+    data.forEach(c => { byDate[c.date] = c })
+
+    const W = 300, H = 100, pad = 8
+    const chartW = W - pad * 2
+    const chartH = H - pad * 2
+
+    const toX = (i) => pad + (i / (days.length - 1)) * chartW
+    const toY = (v) => pad + chartH - ((v - 1) / 4) * chartH
+
+    const lines = [
+      { key: 'sleep_quality', color: '#60a5fa' },
+      { key: 'body_feeling',  color: '#4ade80' },
+      { key: 'energy_level',  color: '#fbbf24' }
+    ]
+
+    const svg = document.getElementById('wellbeing-chart')
+    svg.innerHTML = lines.map(({ key, color }) => {
+      const pts = days.map((d, i) => byDate[d]?.[key] ? `${toX(i)},${toY(byDate[d][key])}` : null).filter(Boolean)
+      if (pts.length < 2) return ''
+      const dots = days.map((d, i) => {
+        const v = byDate[d]?.[key]
+        if (!v) return ''
+        return `<circle cx="${toX(i)}" cy="${toY(v)}" r="2.5" fill="${color}"/>`
+      }).join('')
+      return `<polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>${dots}`
+    }).join('')
   }
 
   // ── Check-in ──────────────────────────────────────────────
