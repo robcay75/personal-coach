@@ -1703,33 +1703,38 @@
     const name = type === 'pendling-cykling' ? `🚴 Pendling cykel` : `🚶 Pendling promenad`
 
     const startDate = new Date(`${today}T08:00:00`)
-    const body = {
-      name,
-      type: stravaType,
-      start_date_local: startDate.toISOString(),
-      elapsed_time: totalMin * 60,
-      distance: totalKm * 1000,
-      description: `${count} t/r loggat via Personal Coach`,
-      commute: true,
-      hide_from_home: true,
-      visibility: 'only_me'
-    }
-
     const { data: existing } = await db.from('workouts').select('strava_activity_id').eq('id', workoutId).maybeSingle()
 
     if (existing?.strava_activity_id) {
-      await fetch(`https://www.strava.com/api/v3/activities/${existing.strava_activity_id}`, {
+      const putResp = await fetch(`https://www.strava.com/api/v3/activities/${existing.strava_activity_id}`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description: body.description, hide_from_home: true })
+        body: JSON.stringify({
+          name,
+          description: `${count} t/r loggat via Personal Coach`,
+          commute: true,
+          hide_from_home: true
+        })
       })
+      const putData = await putResp.json()
+      if (!putResp.ok) throw new Error(putData.message || putResp.status)
     } else {
-      const resp = await fetch('https://www.strava.com/api/v3/activities', {
+      const postResp = await fetch('https://www.strava.com/api/v3/activities', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({
+          name,
+          type: stravaType,
+          start_date_local: startDate.toISOString(),
+          elapsed_time: totalMin * 60,
+          distance: totalKm * 1000,
+          description: `${count} t/r loggat via Personal Coach`,
+          commute: true,
+          hide_from_home: true
+        })
       })
-      const activity = await resp.json()
+      const activity = await postResp.json()
+      if (!postResp.ok) throw new Error(activity.message || postResp.status)
       if (activity.id) {
         await db.from('workouts').update({ strava_activity_id: activity.id }).eq('id', workoutId)
       }
