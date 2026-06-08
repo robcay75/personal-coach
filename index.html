@@ -545,8 +545,6 @@
      HEM
 ═══════════════════════════════════ -->
 <div id="tab-home" class="tab-content active">
-  <div class="page-title">Hej, <span id="home-name">Coach</span></div>
-
   <div class="countdown-card" id="countdown-card">
     <div class="goal-label">Mål</div>
     <div class="goal-text" id="home-goal">—</div>
@@ -998,7 +996,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-08 v12'
+  const APP_VERSION = '2026-06-08 v13'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1111,7 +1109,6 @@
   // ── Home ──────────────────────────────────────────────────
   async function loadHome() {
     if (profile) {
-      document.getElementById('home-name').textContent = profile.name || 'Coach'
       document.getElementById('home-goal').textContent = profile.goal || '—'
       if (profile.goal_date) {
         const days = Math.ceil((new Date(profile.goal_date) - new Date()) / 86400000)
