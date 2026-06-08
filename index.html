@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal Coach — POC</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #fff;
+    }
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    section {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 4px;
+      margin-top: 12px;
+    }
+
+    label:first-of-type { margin-top: 0; }
+
+    input, select, textarea {
+      width: 100%;
+      background: #262626;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #f0f0f0;
+      font-size: 1rem;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #555;
+    }
+
+    textarea { resize: vertical; min-height: 70px; }
+
+    button {
+      margin-top: 16px;
+      width: 100%;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+    #status {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      min-height: 20px;
+      color: #4ade80;
+    }
+
+    #status.error { color: #f87171; }
+
+    .workout-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .workout-card {
+      background: #262626;
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .workout-card .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .workout-card .type {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .workout-card .date {
+      font-size: 0.8rem;
+      color: #666;
+    }
+
+    .workout-card .meta {
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    .workout-card .notes {
+      margin-top: 6px;
+      font-size: 0.85rem;
+      color: #666;
+      font-style: italic;
+    }
+
+    .empty { color: #555; font-size: 0.9rem; text-align: center; padding: 20px 0; }
+
+    .type-icon { margin-right: 6px; }
+  </style>
+</head>
+<body>
+
+  <h1>🏋️ Personal Coach</h1>
+
+  <section>
+    <h2>Logga träningspass</h2>
+
+    <label>Typ</label>
+    <select id="type">
+      <option value="simning">🏊 Simning</option>
+      <option value="löpning">🏃 Löpning</option>
+      <option value="cykling">🚴 Cykling</option>
+      <option value="gym">💪 Gym</option>
+      <option value="annat">⚡ Annat</option>
+    </select>
+
+    <label>Datum</label>
+    <input type="date" id="date" />
+
+    <label>Tid (minuter)</label>
+    <input type="number" id="duration" min="1" placeholder="45" />
+
+    <label>Distans (km, valfritt)</label>
+    <input type="number" id="distance" min="0" step="0.1" placeholder="1.5" />
+
+    <label>Anteckning (valfritt)</label>
+    <textarea id="notes" placeholder="Hur gick det?"></textarea>
+
+    <button id="saveBtn" onclick="saveWorkout()">Spara pass</button>
+    <div id="status"></div>
+  </section>
+
+  <section>
+    <h2>Senaste pass</h2>
+    <div id="workoutList" class="workout-list">
+      <div class="empty">Laddar...</div>
+    </div>
+  </section>
+
+  <script>
+    const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
+    const SUPABASE_KEY = 'sb_publishable_ZcpwyXIaecTytq1cu8qX1Q_EovV5xtV'
+    const { createClient } = supabase
+    const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+    // Sätt dagens datum som default
+    document.getElementById('date').value = new Date().toISOString().split('T')[0]
+
+    async function saveWorkout() {
+      const btn = document.getElementById('saveBtn')
+      const status = document.getElementById('status')
+      status.className = ''
+      status.textContent = ''
+
+      const type = document.getElementById('type').value
+      const date = document.getElementById('date').value
+      const duration = parseInt(document.getElementById('duration').value)
+      const distance = document.getElementById('distance').value
+      const notes = document.getElementById('notes').value.trim()
+
+      if (!date || !duration || duration < 1) {
+        status.className = 'error'
+        status.textContent = 'Fyll i datum och tid.'
+        return
+      }
+
+      btn.disabled = true
+      btn.textContent = 'Sparar...'
+
+      const { error } = await db.from('workouts').insert({
+        type,
+        date,
+        duration_minutes: duration,
+        distance_km: distance ? parseFloat(distance) : null,
+        notes: notes || null
+      })
+
+      if (error) {
+        status.className = 'error'
+        status.textContent = 'Fel: ' + error.message
+      } else {
+        status.textContent = 'Passet sparat!'
+        document.getElementById('duration').value = ''
+        document.getElementById('distance').value = ''
+        document.getElementById('notes').value = ''
+        loadWorkouts()
+      }
+
+      btn.disabled = false
+      btn.textContent = 'Spara pass'
+    }
+
+    async function loadWorkouts() {
+      const list = document.getElementById('workoutList')
+
+      const { data, error } = await db
+        .from('workouts')
+        .select('*')
+        .order('date', { ascending: false })
+        .limit(10)
+
+      if (error) {
+        list.innerHTML = '<div class="empty" style="color:#f87171">Kunde inte ladda pass.</div>'
+        return
+      }
+
+      if (!data.length) {
+        list.innerHTML = '<div class="empty">Inga pass loggade ännu.</div>'
+        return
+      }
+
+      const icons = { simning: '🏊', löpning: '🏃', cykling: '🚴', gym: '💪', annat: '⚡' }
+
+      list.innerHTML = data.map(w => `
+        <div class="workout-card">
+          <div class="top">
+            <span class="type">${icons[w.type] || '⚡'} ${w.type.charAt(0).toUpperCase() + w.type.slice(1)}</span>
+            <span class="date">${formatDate(w.date)}</span>
+          </div>
+          <div class="meta">${w.duration_minutes} min${w.distance_km ? ' · ' + w.distance_km + ' km' : ''}</div>
+          ${w.notes ? `<div class="notes">${w.notes}</div>` : ''}
+        </div>
+      `).join('')
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00')
+      return d.toLocaleDateString('sv-SE', { weekday: 'short', month: 'short', day: 'numeric' })
+    }
+
+    loadWorkouts()
+  </script>
+
+</body>
+</html>
