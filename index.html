@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Personal Coach</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -52,21 +53,32 @@
       background: none;
       border: none;
       color: var(--dim);
-      font-size: 1.95rem;
       cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
+      gap: 3px;
       padding: 0;
       transition: color 0.15s;
     }
+
+    .bottom-nav button svg { width: 22px; height: 22px; }
 
     .bottom-nav button span {
       font-size: 0.62rem;
       letter-spacing: 0.03em;
     }
+
+    /* ── Lucide icon sizing ── */
+    .page-title svg { width: 20px; height: 20px; vertical-align: -3px; margin-right: 5px; }
+    .stat-label svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 2px; }
+    .today-pill .pill-icon svg { width: 22px; height: 22px; }
+    .cb-icon svg { width: 30px; height: 30px; }
+    .recovery-ring svg { width: 26px; height: 26px; }
+    .item-title svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 3px; }
+    .item-meta svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 2px; }
+    .toggle-group svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 3px; }
 
     .bottom-nav button.active { color: var(--accent); }
 
@@ -533,7 +545,7 @@
      HEM
 ═══════════════════════════════════ -->
 <div id="tab-home" class="tab-content active">
-  <div class="page-title">👋 Hej <span id="home-name">Coach</span></div>
+  <div class="page-title">Hej, <span id="home-name">Coach</span></div>
 
   <div class="countdown-card" id="countdown-card">
     <div class="goal-label">Mål</div>
@@ -553,19 +565,19 @@
   <div class="stats-grid-4">
     <div class="stat-card">
       <div class="stat-val" id="home-streak">0</div>
-      <div class="stat-label">🔥 Träningsstreak</div>
+      <div class="stat-label"><i data-lucide="flame"></i> Träningsstreak</div>
     </div>
     <div class="stat-card">
       <div class="stat-val" id="home-ci-streak">0</div>
-      <div class="stat-label">🌙 Check-in streak</div>
+      <div class="stat-label"><i data-lucide="moon"></i> Check-in streak</div>
     </div>
     <div class="stat-card">
       <div class="stat-val" id="home-week-workouts">0</div>
-      <div class="stat-label">💪 Pass denna vecka</div>
+      <div class="stat-label"><i data-lucide="dumbbell"></i> Pass denna vecka</div>
     </div>
     <div class="stat-card">
       <div class="stat-val" id="home-meal-streak">0</div>
-      <div class="stat-label">🍽️ Mat-streak</div>
+      <div class="stat-label"><i data-lucide="utensils"></i> Mat-streak</div>
     </div>
   </div>
 
@@ -578,19 +590,19 @@
     <div class="card-title">Idag</div>
     <div class="today-grid">
       <div class="today-pill" id="today-workout" onclick="switchTab('workout')">
-        <div class="pill-icon">💪</div>
+        <div class="pill-icon"><i data-lucide="dumbbell"></i></div>
         <div id="today-workout-label">Träning</div>
       </div>
       <div class="today-pill" id="today-meal" onclick="switchTab('meal')">
-        <div class="pill-icon">🍽️</div>
+        <div class="pill-icon"><i data-lucide="utensils"></i></div>
         <div id="today-meal-label">Måltider</div>
       </div>
       <div class="today-pill" id="today-checkin" onclick="switchTab('checkin')">
-        <div class="pill-icon">🌙</div>
+        <div class="pill-icon"><i data-lucide="moon"></i></div>
         <div id="today-checkin-label">Check-in</div>
       </div>
       <div class="today-pill" id="today-weight" onclick="switchTab('weight')">
-        <div class="pill-icon">⚖️</div>
+        <div class="pill-icon"><i data-lucide="scale"></i></div>
         <div id="today-weight-label">Vikt</div>
       </div>
     </div>
@@ -611,36 +623,23 @@
      TRÄNING
 ═══════════════════════════════════ -->
 <div id="tab-workout" class="tab-content">
-  <div class="page-title">💪 Träning</div>
+  <div class="page-title"><i data-lucide="dumbbell"></i> Träning</div>
 
   <div class="card">
     <div class="card-title">Pendling</div>
     <div class="commute-btns">
       <button class="commute-btn" onclick="logCommute('cykling')">
-        <div class="cb-icon">🚴</div>
+        <div class="cb-icon"><i data-lucide="bike"></i></div>
         <div class="cb-label">Cykel t/r</div>
         <div class="cb-count" id="commute-bike-count">Idag: 0 st</div>
       </button>
       <button class="commute-btn" onclick="logCommute('promenad')">
-        <div class="cb-icon">🚶</div>
+        <div class="cb-icon"><i data-lucide="footprints"></i></div>
         <div class="cb-label">Promenad t/r</div>
         <div class="cb-count" id="commute-walk-count">Idag: 0 st</div>
       </button>
     </div>
-    <div class="rpe-label">Upplevd ansträngning (RPE 1–10)</div>
-    <div class="rpe-row" id="rpe-row">
-      <button class="rpe-btn" onclick="setCommuteRpe(1)">1</button>
-      <button class="rpe-btn active" onclick="setCommuteRpe(2)">2</button>
-      <button class="rpe-btn" onclick="setCommuteRpe(3)">3</button>
-      <button class="rpe-btn" onclick="setCommuteRpe(4)">4</button>
-      <button class="rpe-btn" onclick="setCommuteRpe(5)">5</button>
-      <button class="rpe-btn" onclick="setCommuteRpe(6)">6</button>
-      <button class="rpe-btn" onclick="setCommuteRpe(7)">7</button>
-      <button class="rpe-btn" onclick="setCommuteRpe(8)">8</button>
-      <button class="rpe-btn" onclick="setCommuteRpe(9)">9</button>
-      <button class="rpe-btn" onclick="setCommuteRpe(10)">10</button>
-    </div>
-    <div id="commute-status" class="status"></div>
+<div id="commute-status" class="status"></div>
   </div>
 
   <div class="card">
@@ -692,7 +691,7 @@
      MAT
 ═══════════════════════════════════ -->
 <div id="tab-meal" class="tab-content">
-  <div class="page-title">🍽️ Mat</div>
+  <div class="page-title"><i data-lucide="utensils"></i> Mat</div>
 
   <div class="card" id="calorie-card" style="display:none">
     <div class="card-title">Kaloribalans idag</div>
@@ -771,7 +770,7 @@
      VIKT
 ═══════════════════════════════════ -->
 <div id="tab-weight" class="tab-content">
-  <div class="page-title">⚖️ Vikt</div>
+  <div class="page-title"><i data-lucide="scale"></i> Vikt</div>
 
   <div class="card" id="weight-progress-card" style="display:none">
     <div class="card-title">Progress mot mål</div>
@@ -814,11 +813,11 @@
      CHECK-IN
 ═══════════════════════════════════ -->
 <div id="tab-checkin" class="tab-content">
-  <div class="page-title">🌙 Check-in</div>
+  <div class="page-title"><i data-lucide="moon"></i> Check-in</div>
 
   <div class="toggle-group">
-    <button id="ci-morning-btn" class="active" onclick="setCiMode('morning')">🌅 Morgon</button>
-    <button id="ci-evening-btn" onclick="setCiMode('evening')">🌙 Kväll</button>
+    <button id="ci-morning-btn" class="active" onclick="setCiMode('morning')"><i data-lucide="sunrise"></i> Morgon</button>
+    <button id="ci-evening-btn" onclick="setCiMode('evening')"><i data-lucide="moon"></i> Kväll</button>
   </div>
 
   <div class="card">
@@ -904,7 +903,7 @@
      PROFIL
 ═══════════════════════════════════ -->
 <div id="tab-profile" class="tab-content">
-  <div class="page-title">👤 Profil</div>
+  <div class="page-title"><i data-lucide="user"></i> Profil</div>
 
   <div class="card">
     <div class="card-title">Strava</div>
@@ -979,27 +978,27 @@
 ═══════════════════════════════════ -->
 <nav class="bottom-nav">
   <button id="nav-home" class="active" onclick="switchTab('home')">
-    <span>🏠</span><span>Hem</span>
+    <i data-lucide="home"></i><span>Hem</span>
   </button>
   <button id="nav-workout" onclick="switchTab('workout')">
-    <span>💪</span><span>Träning</span>
+    <i data-lucide="dumbbell"></i><span>Träning</span>
   </button>
   <button id="nav-meal" onclick="switchTab('meal')">
-    <span>🍽️</span><span>Mat</span>
+    <i data-lucide="utensils"></i><span>Mat</span>
   </button>
   <button id="nav-weight" onclick="switchTab('weight')">
-    <span>⚖️</span><span>Vikt</span>
+    <i data-lucide="scale"></i><span>Vikt</span>
   </button>
   <button id="nav-checkin" onclick="switchTab('checkin')">
-    <span>🌙</span><span>Check-in</span>
+    <i data-lucide="moon"></i><span>Check-in</span>
   </button>
   <button id="nav-profile" onclick="switchTab('profile')">
-    <span>👤</span><span>Profil</span>
+    <i data-lucide="user"></i><span>Profil</span>
   </button>
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-08 v10'
+  const APP_VERSION = '2026-06-08 v12'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1033,6 +1032,7 @@
     await loadProfile()
     refreshTab('home')
     loadStravaStatus()
+    lucide.createIcons()
   }
 
   function setDateDefaults() {
@@ -1159,6 +1159,7 @@
     setPill('today-meal', 'today-meal-label', meals.some(m => m.date === today), 'Loggat', 'Måltider')
     setPill('today-checkin', 'today-checkin-label', !!checkinTodayRes.data, 'Klart', 'Check-in')
     setPill('today-weight', 'today-weight-label', !!weightTodayRes.data, 'Loggad', 'Vikt')
+    lucide.createIcons()
   }
 
   function calcStreak(dates) {
@@ -1222,18 +1223,18 @@
     score -= recentLoad * 8
     score = Math.max(0, Math.min(100, score))
 
-    let level, emoji, msg
+    let level, icon, msg
     if (score >= 70) {
-      level = 'good'; emoji = '💪'; msg = `Score ${score} — bra läge att träna hårt`
+      level = 'good'; icon = 'dumbbell'; msg = `Score ${score} — bra läge att träna hårt`
     } else if (score >= 45) {
-      level = 'ok'; emoji = '😐'; msg = `Score ${score} — lyssna på kroppen`
+      level = 'ok'; icon = 'activity'; msg = `Score ${score} — lyssna på kroppen`
     } else {
-      level = 'rest'; emoji = '😴'; msg = `Score ${score} — prioritera vila idag`
+      level = 'rest'; icon = 'bed'; msg = `Score ${score} — prioritera vila idag`
     }
 
     card.className = `recovery-card ${level}`
     ring.className = `recovery-ring ${level}`
-    ring.textContent = emoji
+    ring.innerHTML = `<i data-lucide="${icon}"></i>`
     title.textContent = level === 'good' ? 'Återhämtad' : level === 'ok' ? 'Halvtaskig' : 'Behöver vila'
     sub.textContent = msg
   }
@@ -1344,16 +1345,17 @@
     const { data } = await db.from('workouts').select('*').order('date', { ascending: false }).limit(15)
     const list = document.getElementById('workout-list')
     if (!data?.length) { list.innerHTML = '<div class="empty">Inga pass loggade ännu.</div>'; return }
-    const icons = { simning: '🏊', löpning: '🏃', cykling: '🚴', gym: '💪', annat: '⚡', 'pendling-cykling': '🚴', 'pendling-promenad': '🚶' }
+    const icons = { simning: 'waves', löpning: 'footprints', cykling: 'bike', gym: 'dumbbell', annat: 'zap', 'pendling-cykling': 'bike', 'pendling-promenad': 'footprints' }
     list.innerHTML = data.map(w => `
       <div class="item-card">
         <div class="item-top">
-          <span class="item-title">${icons[w.type] || '⚡'} ${capitalize(w.type)}</span>
+          <span class="item-title"><i data-lucide="${icons[w.type] || 'zap'}"></i> ${capitalize(w.type)}</span>
           <span class="item-date">${fmtDate(w.date)}</span>
         </div>
-        <div class="item-meta">${w.duration_minutes} min${w.distance_km ? ' · ' + w.distance_km + ' km' : ''}${w.calories ? ' · 🔥 ' + w.calories + ' kcal' : ''}</div>
+        <div class="item-meta">${w.duration_minutes} min${w.distance_km ? ' · ' + w.distance_km + ' km' : ''}${w.calories ? ' · <i data-lucide="flame"></i> ' + w.calories + ' kcal' : ''}</div>
         ${w.notes ? `<div class="item-note">${w.notes}</div>` : ''}
       </div>`).join('')
+    lucide.createIcons()
   }
 
   // ── Meals ─────────────────────────────────────────────────
@@ -1390,16 +1392,17 @@
     const { data } = await db.from('meals').select('*').eq('date', today).order('created_at')
     const list = document.getElementById('meal-list')
     if (!data?.length) { list.innerHTML = '<div class="empty">Inga måltider loggade idag.</div>'; return }
-    const typeIcons = { frukost: '🌅', lunch: '☀️', middag: '🌙', mellanmål: '🍎' }
+    const typeIcons = { frukost: 'sunrise', lunch: 'sun', middag: 'moon', mellanmål: 'apple' }
     list.innerHTML = data.map(m => `
       <div class="item-card">
         <div class="item-top">
-          <span class="item-title">${typeIcons[m.meal_type] || '🍽️'} ${capitalize(m.meal_type || 'Måltid')}</span>
+          <span class="item-title"><i data-lucide="${typeIcons[m.meal_type] || 'utensils'}"></i> ${capitalize(m.meal_type || 'Måltid')}</span>
           ${m.health_score ? `<span class="health-badge hb-${m.health_score}">${m.health_score}</span>` : ''}
         </div>
         <div class="item-meta">${m.description}${m.calories ? ' · ' + m.calories + ' kcal' : ''}</div>
         ${m.comment ? `<div class="item-note">${m.comment}</div>` : ''}
       </div>`).join('')
+    lucide.createIcons()
   }
 
   function calcTDEE() {
@@ -1503,10 +1506,11 @@
     list.innerHTML = data.map(w => `
       <div class="item-card">
         <div class="item-top">
-          <span class="item-title">⚖️ ${w.weight_kg} kg</span>
+          <span class="item-title"><i data-lucide="scale"></i> ${w.weight_kg} kg</span>
           <span class="item-date">${fmtDate(w.date)}</span>
         </div>
       </div>`).join('')
+    lucide.createIcons()
   }
 
   function drawWeightChart(entries) {
@@ -1700,20 +1704,21 @@
     if (!data?.length) { list.innerHTML = '<div class="empty">Inga check-ins än.</div>'; return }
     list.innerHTML = data.map(c => {
       const parts = []
-      if (c.sleep_hours != null) parts.push(`😴 ${c.sleep_hours}h`)
+      if (c.sleep_hours != null) parts.push(`<i data-lucide="bed"></i> ${c.sleep_hours}h`)
       if (c.sleep_quality) parts.push(`Sömn ${stars(c.sleep_quality)}`)
       if (c.body_feeling) parts.push(`Kropp ${stars(c.body_feeling)}`)
       if (c.energy_level) parts.push(`Energi ${stars(c.energy_level)}`)
       return `<div class="item-card">
         <div class="item-top">
-          <span class="item-title">🌙 Check-in</span>
+          <span class="item-title"><i data-lucide="moon"></i> Check-in</span>
           <span class="item-date">${fmtDate(c.date)}</span>
         </div>
         <div class="item-meta">${parts.join(' · ') || '—'}</div>
-        ${c.morning_intention ? `<div class="item-note">☀️ ${c.morning_intention}</div>` : ''}
-        ${c.evening_summary ? `<div class="item-note">🌙 ${c.evening_summary}</div>` : ''}
+        ${c.morning_intention ? `<div class="item-note"><i data-lucide="sunrise"></i> ${c.morning_intention}</div>` : ''}
+        ${c.evening_summary ? `<div class="item-note"><i data-lucide="moon"></i> ${c.evening_summary}</div>` : ''}
       </div>`
     }).join('')
+    lucide.createIcons()
   }
 
   // ── Export ────────────────────────────────────────────────
@@ -1983,13 +1988,6 @@
   }
 
   // ── RPE / Strava sync ────────────────────────────────────
-  function setCommuteRpe(n) {
-    commuteRpe = n
-    document.querySelectorAll('#rpe-row .rpe-btn').forEach((btn, i) => {
-      btn.classList.toggle('active', i + 1 === n)
-    })
-  }
-
   async function syncFromStrava() {
     setStatus('strava-sync-status', 'Hämtar från Strava...')
     const token = await getStravaToken()
