@@ -1082,7 +1082,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v34'
+  const APP_VERSION = '2026-06-09 v35'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1783,8 +1783,9 @@
     // Bygg per-dag data
     const eaten = {}, burned = {}
     meals.forEach(m => { eaten[m.date] = (eaten[m.date] || 0) + (m.calories || 0) })
-    workouts.filter(w => !w.type.startsWith('pendling')).forEach(w => {
-      burned[w.date] = (burned[w.date] || 0) + Math.round(w.duration_minutes * 7)
+    workouts.forEach(w => {
+      const kcal = w.calories || Math.round(w.duration_minutes * (w.type === 'pendling-cykling' ? 5.5 : 7))
+      burned[w.date] = (burned[w.date] || 0) + kcal
     })
 
     // Alla dagar från första logg till idag
