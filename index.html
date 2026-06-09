@@ -1082,7 +1082,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v35'
+  const APP_VERSION = '2026-06-09 v36'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1639,9 +1639,7 @@
 
     const eaten = mealsRes.data.reduce((s, m) => s + (m.calories || 0), 0)
     const burned = (workoutsRes.data || []).reduce((s, w) => {
-      if (w.calories) return s + w.calories
-      if (w.type.startsWith('pendling')) return s
-      return s + Math.round(w.duration_minutes * 7)
+      return s + (w.calories || Math.round(w.duration_minutes * (w.type === 'pendling-cykling' ? 5.5 : 7)))
     }, 0)
 
     const target = calcCalorieTarget()
@@ -1651,14 +1649,14 @@
     card.style.display = 'block'
 
     if (target) {
-      const effectiveTarget = target + burned
+      const effectiveTarget = target + (includeExercise ? burned : 0)
       const pct = Math.min(100, Math.round((eaten / effectiveTarget) * 100))
       const remaining = effectiveTarget - eaten
       document.getElementById('cal-target').textContent = effectiveTarget
       document.getElementById('cal-bar').style.width = pct + '%'
       document.getElementById('cal-bar').className = 'cal-budget-bar-fill' + (eaten > effectiveTarget ? ' over' : '')
       document.getElementById('cal-remaining-label').textContent = remaining >= 0 ? `${remaining} kcal kvar` : `${Math.abs(remaining)} kcal över`
-      document.getElementById('cal-burned-label').textContent = burned > 0 ? `🔥 +${burned} träning` : ''
+      document.getElementById('cal-burned-label').textContent = (includeExercise && burned > 0) ? `🔥 +${burned} träning` : ''
     } else {
       document.getElementById('cal-target').textContent = '—'
       document.getElementById('cal-bar').style.width = '0%'
