@@ -543,6 +543,31 @@
     }
     .cal-budget-bar-fill.over { background: var(--red); }
 
+    /* ── Toggle switch ── */
+    .toggle-switch {
+      width: 36px; height: 20px;
+      background: var(--surface2);
+      border-radius: 999px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: 1px solid var(--border);
+    }
+    .toggle-switch.on { background: var(--accent); border-color: var(--accent); }
+    .toggle-knob {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle-switch.on .toggle-knob { transform: translateX(16px); }
+
+    /* ── Deficit chart ── */
+    .deficit-positive { fill: var(--green); }
+    .deficit-negative { fill: var(--red); }
+
     /* ── Misc ── */
     .section-divider {
       height: 1px;
@@ -576,7 +601,7 @@
       </div>
     </div>
 
-    <svg id="wh-curve" width="100%" height="70" viewBox="0 0 300 70" preserveAspectRatio="none" style="margin-bottom:10px;"></svg>
+    <svg id="wh-curve" width="100%" height="48" viewBox="0 0 300 48" preserveAspectRatio="none" style="margin-bottom:10px;"></svg>
 
     <div class="progress-bar-wrap" style="margin-bottom:6px;">
       <div class="progress-bar-fill" id="wh-bar" style="width:0%"></div>
@@ -731,13 +756,45 @@
 <div id="tab-meal" class="tab-content">
   <div class="page-title"><i data-lucide="utensils"></i> Mat</div>
 
-  <div class="card" id="calorie-card" style="display:none">
-    <div class="card-title">Kaloribalans idag</div>
-    <div class="cal-budget-row">
-      <span style="font-size:1.8rem; font-weight:700;" id="cal-today">0</span>
-      <span style="color:var(--muted); font-size:0.85rem;">/ <span id="cal-target">—</span> kcal mål</span>
+  <div class="card" id="deficit-card" style="display:none">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div class="card-title" style="margin-bottom:0">Kaloriunderskott</div>
+      <label style="display:flex; align-items:center; gap:6px; margin:0; font-size:0.8rem; color:var(--muted); cursor:pointer;">
+        <span>Träning</span>
+        <div class="toggle-switch" onclick="toggleExercise()">
+          <div class="toggle-knob" id="exercise-knob"></div>
+        </div>
+      </label>
     </div>
-    <div class="cal-budget-bar-wrap">
+
+    <div style="display:flex; gap:12px; margin-bottom:12px;">
+      <div style="flex:1; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:800;" id="deficit-today">—</div>
+        <div style="font-size:0.72rem; color:var(--muted);">idag</div>
+      </div>
+      <div style="flex:1; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:800;" id="deficit-avg">—</div>
+        <div style="font-size:0.72rem; color:var(--muted);">snitt/dag</div>
+      </div>
+      <div style="flex:1; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:800;" id="deficit-streak">—</div>
+        <div style="font-size:0.72rem; color:var(--muted);">🔥 underskottsdagar</div>
+      </div>
+    </div>
+
+    <svg id="deficit-chart" width="100%" height="120" viewBox="0 0 300 120" preserveAspectRatio="none"></svg>
+    <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:0.72rem; color:var(--muted);">
+      <span>↑ underskott</span>
+      <span>↓ överskott</span>
+    </div>
+  </div>
+
+  <div class="card" id="calorie-card" style="display:none">
+    <div class="cal-budget-row">
+      <span style="font-size:1.5rem; font-weight:700;" id="cal-today">0</span>
+      <span style="color:var(--muted); font-size:0.82rem;">/ <span id="cal-target">—</span> kcal mål</span>
+    </div>
+    <div class="cal-budget-bar-wrap" style="margin:6px 0 4px;">
       <div class="cal-budget-bar-fill" id="cal-bar" style="width:0%"></div>
     </div>
     <div style="display:flex; justify-content:space-between; font-size:0.78rem; color:var(--muted);">
@@ -787,14 +844,6 @@
     <div id="m-status" class="status"></div>
   </div>
 
-  <div class="card" id="cal-chart-card" style="display:none">
-    <div class="card-title">Kaloribalans — 7 dagar</div>
-    <svg id="cal-chart" width="100%" height="130" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
-    <div style="display:flex; gap:12px; margin-top:6px; font-size:0.72rem; color:var(--muted);">
-      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--green);border-radius:2px;display:inline-block"></span>Under mål</span>
-      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--red);border-radius:2px;display:inline-block"></span>Över mål</span>
-    </div>
-  </div>
 
   <div class="card">
     <div class="card-title">Måltider</div>
@@ -1037,7 +1086,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v29'
+  const APP_VERSION = '2026-06-09 v30'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1054,6 +1103,7 @@
   let profile = null
   let currentTab = 'home'
   let ciMode = 'morning'
+  let includeExercise = true
   let healthScore = 0
   let sleepQuality = 0
   let bodyFeeling = 0
@@ -1094,7 +1144,7 @@
   function refreshTab(name) {
     if (name === 'home') loadHome()
     if (name === 'workout') { loadWorkouts(); loadCommuteCounts() }
-    if (name === 'meal') { loadMeals(); updateCalToday(); drawCalorieChart() }
+    if (name === 'meal') { loadMeals(); updateCalToday(); drawDeficitChart() }
     if (name === 'weight') loadWeights()
     if (name === 'checkin') { loadCheckins(); drawWellbeingChart(); loadCheckinForm() }
     if (name === 'profile') updateWeightSuggestions()
@@ -1261,7 +1311,7 @@
 
   function drawWeightHomeCurve(entries, start, target) {
     const svg  = document.getElementById('wh-curve')
-    const W = 300, H = 70, pad = 10
+    const W = 300, H = 48, pad = 7
     const allW = [start, ...entries.map(e => e.weight_kg), target]
     const minW = Math.min(...allW) - 1
     const maxW = Math.max(...allW) + 1
@@ -1711,65 +1761,109 @@
     `
   }
 
-  async function drawCalorieChart() {
-    const target = calcCalorieTarget()
-    const sevenAgo = new Date(); sevenAgo.setDate(sevenAgo.getDate() - 6)
-    const since = localDate(sevenAgo)
+  function toggleExercise() {
+    includeExercise = !includeExercise
+    const sw = document.querySelector('.toggle-switch')
+    if (sw) sw.classList.toggle('on', includeExercise)
+    drawDeficitChart()
+    updateCalToday()
+  }
 
+  async function drawDeficitChart() {
+    const baseTarget = calcCalorieTarget()
+    const card = document.getElementById('deficit-card')
+    if (!baseTarget) { card.style.display = 'none'; return }
+
+    // Hämta alla måltider och träningspass
     const [mealsRes, workoutsRes] = await Promise.all([
-      db.from('meals').select('date, calories').gte('date', since),
-      db.from('workouts').select('date, duration_minutes, type').gte('date', since)
+      db.from('meals').select('date, calories').order('date'),
+      db.from('workouts').select('date, duration_minutes, type').order('date')
     ])
 
-    const days = []
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i)
-      days.push(localDate(d))
-    }
+    const meals = mealsRes.data || []
+    const workouts = workoutsRes.data || []
+    if (!meals.length) { card.style.display = 'none'; return }
 
-    const eaten = {}
-    const burned = {}
-    ;(mealsRes.data || []).forEach(m => { eaten[m.date] = (eaten[m.date] || 0) + (m.calories || 0) })
-    ;(workoutsRes.data || []).filter(w => !w.type.startsWith('pendling')).forEach(w => {
+    // Bygg per-dag data
+    const eaten = {}, burned = {}
+    meals.forEach(m => { eaten[m.date] = (eaten[m.date] || 0) + (m.calories || 0) })
+    workouts.filter(w => !w.type.startsWith('pendling')).forEach(w => {
       burned[w.date] = (burned[w.date] || 0) + Math.round(w.duration_minutes * 7)
     })
 
-    const hasData = days.some(d => eaten[d])
-    const card = document.getElementById('cal-chart-card')
-    card.style.display = hasData ? 'block' : 'none'
-    if (!hasData) return
+    // Alla dagar från första logg till idag
+    const firstDate = meals[0].date
+    const days = []
+    let d = new Date(firstDate + 'T00:00:00')
+    const todayD = new Date(today + 'T00:00:00')
+    while (d <= todayD) { days.push(localDate(d)); d.setDate(d.getDate() + 1) }
 
-    const W = 300, H = 110, padB = 20, padT = 6
+    // Beräkna underskott per dag (positiv = underskott = bra)
+    const deficits = days.map(day => {
+      const e = eaten[day]
+      if (e === undefined) return null // ingen data loggad
+      const eff = baseTarget + (includeExercise ? (burned[day] || 0) : 0)
+      return eff - e // positivt = underskott
+    })
+
+    // Statistik
+    const dataPoints = deficits.filter(d => d !== null)
+    const todayDeficit = deficits[deficits.length - 1]
+    const avg = dataPoints.length ? Math.round(dataPoints.reduce((s, v) => s + v, 0) / dataPoints.length) : 0
+
+    // Underskottsstreak (consecutive days with deficit)
+    let defStreak = 0
+    for (let i = deficits.length - 1; i >= 0; i--) {
+      if (deficits[i] !== null && deficits[i] > 0) defStreak++
+      else if (deficits[i] !== null) break
+    }
+
+    const fmt = v => v === null ? '—' : (v >= 0 ? '+' : '') + v
+    const color = v => v === null ? 'var(--muted)' : v >= 0 ? 'var(--green)' : 'var(--red)'
+
+    document.getElementById('deficit-today').textContent = todayDeficit !== null ? fmt(todayDeficit) : '—'
+    document.getElementById('deficit-today').style.color = color(todayDeficit)
+    document.getElementById('deficit-avg').textContent = fmt(avg)
+    document.getElementById('deficit-avg').style.color = color(avg)
+    document.getElementById('deficit-streak').textContent = defStreak
+
+    card.style.display = 'block'
+
+    // Toggle-knapp
+    const sw = document.querySelector('.toggle-switch')
+    if (sw) sw.classList.toggle('on', includeExercise)
+
+    // Rita stapeldiagram
+    const W = 300, H = 120, padB = 16, padT = 8
     const chartH = H - padB - padT
-    const barW = W / days.length
-    const maxCal = Math.max(target || 2000, ...days.map(d => (eaten[d] || 0)))
-    const svg = document.getElementById('cal-chart')
+    const midY = padT + chartH / 2
+    const maxAbs = Math.max(200, ...dataPoints.map(Math.abs))
+    const barW = Math.max(2, W / days.length)
+    const maxBars = Math.floor(W / 3)
+    const visibleDays = days.slice(-maxBars)
+    const visibleDeficits = deficits.slice(-maxBars)
+    const vBarW = W / visibleDays.length
 
-    const bars = days.map((d, i) => {
-      const kcal = eaten[d] || 0
-      const eff = target ? target + (burned[d] || 0) : 0
-      const over = eff > 0 && kcal > eff
-      const h = kcal > 0 ? Math.max(4, Math.round((kcal / maxCal) * chartH)) : 2
-      const x = i * barW + 2
-      const y = padT + chartH - h
-      const isToday = d === today
-      const dayLabel = new Date(d + 'T00:00:00').toLocaleDateString('sv-SE', { weekday: 'narrow' })
+    const svg = document.getElementById('deficit-chart')
+    const bars = visibleDays.map((day, i) => {
+      const val = visibleDeficits[i]
+      if (val === null) return ''
+      const h = Math.max(2, Math.round((Math.abs(val) / maxAbs) * (chartH / 2)))
+      const isPos = val >= 0
+      const x = i * vBarW + 1
+      const y = isPos ? midY - h : midY
+      const isToday = day === today
+      const dayLabel = new Date(day + 'T00:00:00').toLocaleDateString('sv-SE', { weekday: 'narrow' })
       return `
-        <rect x="${x}" y="${y}" width="${barW - 4}" height="${h}" rx="3"
-          fill="${kcal === 0 ? 'var(--surface2)' : over ? 'var(--red)' : 'var(--green)'}"
-          opacity="${isToday ? 1 : 0.7}"/>
-        <text x="${x + (barW - 4) / 2}" y="${H - 4}" text-anchor="middle"
-          font-size="9" fill="${isToday ? 'var(--text)' : 'var(--dim)'}">${dayLabel}</text>
-        ${kcal > 0 ? `<text x="${x + (barW-4)/2}" y="${y - 2}" text-anchor="middle" font-size="8" fill="var(--muted)">${kcal}</text>` : ''}`
+        <rect x="${x}" y="${y}" width="${vBarW - 2}" height="${h}" rx="1.5"
+          fill="${isPos ? 'var(--green)' : 'var(--red)'}" opacity="${isToday ? 1 : 0.65}"/>
+        ${visibleDays.length <= 14 ? `<text x="${x + (vBarW-2)/2}" y="${H - 2}" text-anchor="middle" font-size="8" fill="${isToday ? 'var(--text)' : 'var(--dim)'}">${dayLabel}</text>` : ''}`
     }).join('')
 
-    const targetLine = target ? (() => {
-      const ty = padT + chartH - Math.round((target / maxCal) * chartH)
-      return `<line x1="0" y1="${ty}" x2="${W}" y2="${ty}" stroke="#2563eb" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
-              <text x="${W - 2}" y="${ty - 2}" text-anchor="end" font-size="8" fill="#2563eb" opacity="0.8">${target}</text>`
-    })() : ''
-
-    svg.innerHTML = bars + targetLine
+    svg.innerHTML = `
+      <line x1="0" y1="${midY}" x2="${W}" y2="${midY}" stroke="var(--border)" stroke-width="1"/>
+      ${bars}
+    `
   }
 
   async function drawWellbeingChart() {
