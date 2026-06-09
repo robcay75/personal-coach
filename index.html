@@ -1082,7 +1082,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v33'
+  const APP_VERSION = '2026-06-09 v34'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1847,7 +1847,8 @@
       const h = Math.max(2, Math.round((Math.abs(val) / maxAbs) * (chartH / 2)))
       const isPos = val >= 0
       const x = i * vBarW + 1
-      const y = isPos ? midY - h : midY
+      // Underskott (isPos) hänger nedåt, överskott pekar uppåt
+      const y = isPos ? midY : midY - h
       const isToday = day === today
       return `
         <rect x="${x}" y="${y}" width="${vBarW - 2}" height="${h}" rx="1.5"
