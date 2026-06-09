@@ -1082,7 +1082,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v31'
+  const APP_VERSION = '2026-06-09 v32'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -2121,7 +2121,7 @@
 
   // ── Strava OAuth ──────────────────────────────────────────
   function connectStrava() {
-    const url = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT_URI)}&approval_prompt=force&scope=activity:read_all,activity:write`
+    const url = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT_URI)}&approval_prompt=force&scope=activity:read_all,activity:write,profile:read_all`
     window.location.href = url
   }
 
@@ -2145,13 +2145,25 @@
     const data = await resp.json()
     if (!data.access_token) { alert('Strava-koppling misslyckades: ' + (data.message || 'okänt fel')); return }
 
+    // Hämta fullständig atletprofil för att få cykelns gear_id
+    let bikeGearId = null
+    try {
+      const athleteResp = await fetch('https://www.strava.com/api/v3/athlete', {
+        headers: { 'Authorization': `Bearer ${data.access_token}` }
+      })
+      const athlete = await athleteResp.json()
+      const merida = (athlete.bikes || []).find(b => b.name?.toLowerCase().includes('merida'))
+      if (merida) bikeGearId = merida.id
+    } catch(e) {}
+
     await db.from('strava_tokens').delete().gte('id', '00000000-0000-0000-0000-000000000000')
     await db.from('strava_tokens').insert({
       access_token: data.access_token,
       refresh_token: data.refresh_token,
       expires_at: data.expires_at,
       athlete_id: data.athlete?.id,
-      athlete_name: data.athlete ? `${data.athlete.firstname} ${data.athlete.lastname}` : null
+      athlete_name: data.athlete ? `${data.athlete.firstname} ${data.athlete.lastname}` : null,
+      bike_gear_id: bikeGearId
     })
   }
 
@@ -2201,6 +2213,13 @@
     const stravaType = type === 'pendling-cykling' ? 'Ride' : 'Walk'
     const name = type === 'pendling-cykling' ? `🚴 Pendling cykel` : `🚶 Pendling promenad`
 
+    // Hämta cykelns gear_id om det är en cykeltur
+    let bikeGearId = null
+    if (type === 'pendling-cykling') {
+      const { data: tokenData } = await db.from('strava_tokens').select('bike_gear_id').limit(1).maybeSingle()
+      bikeGearId = tokenData?.bike_gear_id || null
+    }
+
     const { data: otherCommutes } = await db.from('workouts')
       .select('id').eq('date', today)
       .in('type', ['pendling-cykling', 'pendling-promenad'])
@@ -2230,7 +2249,8 @@
           distance: totalKm * 1000,
           description: `${count} t/r loggat via Personal Coach`,
           perceived_exertion: commuteRpe,
-          commute: true, hide_from_home: true
+          commute: true, hide_from_home: true,
+          ...(bikeGearId ? { gear_id: bikeGearId } : {})
         })
       })
       const rawText = await postResp.text()
