@@ -1082,7 +1082,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-10 v41'
+  const APP_VERSION = '2026-06-10 v42'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -2228,21 +2228,30 @@
       bikeGearId = tokenData?.bike_gear_id || null
     }
 
-    // Använd faktisk tid (avrundat till närmaste minut) — undviker 409-konflikter med gamla aktiviteter
-    const now = new Date()
-    const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), 0)
+    // Starttid: cykling = 07:30, promenad = 08:00 (andra pass +4h)
+    const { data: otherCommutes } = await db.from('workouts')
+      .select('id').eq('date', today).in('type', ['pendling-cykling', 'pendling-promenad']).neq('type', type)
+    const isSecond = (otherCommutes || []).length > 0
+    const baseHour = type === 'pendling-cykling' ? 7 : 8
+    const startHour = isSecond ? baseHour + 9 : baseHour // morgon eller kväll
+    const [y, m, d] = today.split('-').map(Number)
+    const startDate = new Date(y, m - 1, d, startHour, 30, 0)
+
     const { data: existing } = await db.from('workouts').select('strava_activity_id').eq('id', workoutId).maybeSingle()
-
     const privacyBody = { visibility: 'only_me', commute: true, hide_from_home: true }
+    const putBody = { name, description: `${count} t/r loggat via Personal Coach`, perceived_exertion: commuteRpe, ...privacyBody }
 
-    if (existing?.strava_activity_id) {
-      const putResp = await fetch(`https://www.strava.com/api/v3/activities/${existing.strava_activity_id}`, {
+    const doPut = async (activityId) => {
+      const r = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description: `${count} t/r loggat via Personal Coach`, perceived_exertion: commuteRpe, ...privacyBody })
+        body: JSON.stringify(putBody)
       })
-      const putData = await putResp.json()
-      if (!putResp.ok) throw new Error(putData.message || putResp.status)
+      if (!r.ok) throw new Error(`PUT misslyckades (HTTP ${r.status}): ${await r.text()}`)
+    }
+
+    if (existing?.strava_activity_id) {
+      await doPut(existing.strava_activity_id)
     } else {
       const postResp = await fetch('https://www.strava.com/api/v3/activities', {
         method: 'POST',
@@ -2258,12 +2267,30 @@
         })
       })
       const rawText = await postResp.text()
-      if (!postResp.ok) throw new Error(`HTTP ${postResp.status}: ${rawText}`)
-      const created = JSON.parse(rawText)
-      if (created.id) {
-        await db.from('workouts').update({ strava_activity_id: created.id }).eq('id', workoutId)
+
+      let activityId = null
+      if (postResp.status === 409) {
+        // Aktivitet finns redan på Strava (tappat ID) — sök upp den och länka
+        const dayStart = Math.floor(new Date(`${today}T00:00:00`).getTime() / 1000)
+        const dayEnd   = dayStart + 86400
+        const listResp = await fetch(`https://www.strava.com/api/v3/athlete/activities?after=${dayStart}&before=${dayEnd}&per_page=10`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (listResp.ok) {
+          const acts = await listResp.json()
+          const match = acts.find(a => a.type === stravaType || a.sport_type === stravaType)
+          if (match) activityId = match.id
+        }
+        if (!activityId) throw new Error(`HTTP 409 — kunde inte hitta befintlig aktivitet på Strava`)
+      } else {
+        if (!postResp.ok) throw new Error(`HTTP ${postResp.status}: ${rawText}`)
+        activityId = JSON.parse(rawText).id
+      }
+
+      if (activityId) {
+        await db.from('workouts').update({ strava_activity_id: activityId }).eq('id', workoutId)
         // Sätt privat + RPE via PUT (POST stöder inte visibility/perceived_exertion)
-        const putResp = await fetch(`https://www.strava.com/api/v3/activities/${created.id}`, {
+        const putResp = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...privacyBody, perceived_exertion: commuteRpe })
