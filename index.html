@@ -1082,7 +1082,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-10 v38'
+  const APP_VERSION = '2026-06-10 v39'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -2256,7 +2256,6 @@
           elapsed_time: totalMin * 60,
           distance: totalKm * 1000,
           description: `${count} t/r loggat via Personal Coach`,
-          perceived_exertion: commuteRpe,
           commute: true, hide_from_home: true,
           ...(bikeGearId ? { gear_id: bikeGearId } : {})
         })
@@ -2266,12 +2265,16 @@
       const created = JSON.parse(rawText)
       if (created.id) {
         await db.from('workouts').update({ strava_activity_id: created.id }).eq('id', workoutId)
-        // Sätt privat via separat PUT (POST stöder inte visibility)
-        await fetch(`https://www.strava.com/api/v3/activities/${created.id}`, {
+        // Sätt privat + RPE via PUT (POST stöder inte visibility/perceived_exertion)
+        const putResp = await fetch(`https://www.strava.com/api/v3/activities/${created.id}`, {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(privacyBody)
+          body: JSON.stringify({ ...privacyBody, perceived_exertion: commuteRpe })
         })
+        if (!putResp.ok) {
+          const putErr = await putResp.text()
+          console.warn('Strava PUT (privacy/RPE) misslyckades:', putResp.status, putErr)
+        }
       }
     }
   }
