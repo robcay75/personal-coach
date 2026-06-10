@@ -465,6 +465,25 @@
       display: flex;
       gap: 4px;
     }
+    .portion-btn {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 7px 0;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+      min-width: 44px;
+    }
+    .portion-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
     .rpe-btn {
       flex: 1;
       background: var(--surface2);
@@ -814,7 +833,16 @@
     <input type="date" id="m-date" />
 
     <label>Beskriv måltiden</label>
-    <textarea id="m-desc" placeholder="T.ex. havregrynsgröt med bär och honung, kaffe med mjölk"></textarea>
+    <textarea id="m-desc" placeholder="T.ex. havregrynsgröt med bär och honung, kaffe med mjölk" oninput="onMealDescInput()"></textarea>
+
+    <div style="margin-bottom:12px;">
+      <label style="margin-bottom:6px; display:block;">Portion</label>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="portion-btn" id="portion-S" onclick="setMealPortion('S')">S</button>
+        <button type="button" class="portion-btn active" id="portion-M" onclick="setMealPortion('M')">M</button>
+        <button type="button" class="portion-btn" id="portion-L" onclick="setMealPortion('L')">L</button>
+      </div>
+    </div>
 
     <div class="row2">
       <div>
@@ -826,10 +854,11 @@
           <button onclick="setHealthScore(4)">★</button>
           <button onclick="setHealthScore(5)">★</button>
         </div>
+        <div id="m-suggest-label" style="font-size:0.7rem; color:var(--muted); margin-top:3px; min-height:14px;"></div>
       </div>
       <div>
         <label>Kalorier (kcal)</label>
-        <input type="number" id="m-cal" min="0" placeholder="—" />
+        <input type="number" id="m-cal" min="0" placeholder="—" oninput="this._manualEdit=true" />
       </div>
     </div>
 
@@ -1082,7 +1111,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-10 v43'
+  const APP_VERSION = '2026-06-10 v44'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1101,6 +1130,125 @@
   let ciMode = 'morning'
   let includeExercise = true
   let healthScore = 0
+  let mealPortion = 'M'
+
+  // ── Måltids-databas (kcal = M-portion, stjärnor = hälsovärde 1-5) ──
+  const FOOD_DB = [
+    // Frukost
+    { keys: ['havregrynsgröt','havregröt','oatmeal','gröt'], kcal: 340, stars: 5 },
+    { keys: ['müsli','muesli','granola'], kcal: 380, stars: 4 },
+    { keys: ['yoghurt med','yoghurt'], kcal: 180, stars: 5 },
+    { keys: ['kvarg'], kcal: 160, stars: 5 },
+    { keys: ['smoothiebowl','smoothie bowl'], kcal: 380, stars: 4 },
+    { keys: ['smoothie'], kcal: 260, stars: 4 },
+    { keys: ['ägg','omelett','scrambled','pocherat'], kcal: 240, stars: 4 },
+    { keys: ['kanelbulle','bulle','vetebröd','wienerbröd','croissant'], kcal: 370, stars: 1 },
+    { keys: ['pannkaka','pannkakor','plättar','crêpe'], kcal: 480, stars: 2 },
+    { keys: ['frukostsmörgås','smörgås','macka','toast'], kcal: 280, stars: 3 },
+    { keys: ['proteinshake','protein shake'], kcal: 300, stars: 4 },
+    // Sallader
+    { keys: ['caesar sallad','caesarsallad'], kcal: 420, stars: 3 },
+    { keys: ['nicoise','niçoise'], kcal: 380, stars: 4 },
+    { keys: ['poke bowl','poke'], kcal: 480, stars: 4 },
+    { keys: ['sallad med lax','laxsallad'], kcal: 420, stars: 5 },
+    { keys: ['sallad med kyckling','kycklings'], kcal: 400, stars: 5 },
+    { keys: ['sallad'], kcal: 280, stars: 5 },
+    // Soppa
+    { keys: ['gulaschsoppa','gulasch'], kcal: 460, stars: 3 },
+    { keys: ['tomatsoppa'], kcal: 280, stars: 4 },
+    { keys: ['linssoppa'], kcal: 340, stars: 5 },
+    { keys: ['ärtsoppa'], kcal: 360, stars: 5 },
+    { keys: ['soppa'], kcal: 320, stars: 4 },
+    // Pasta
+    { keys: ['pasta bolognese','spagetti bolognese','köttfärssås'], kcal: 640, stars: 3 },
+    { keys: ['pasta carbonara','carbonara'], kcal: 720, stars: 2 },
+    { keys: ['pasta pesto','pesto pasta'], kcal: 580, stars: 3 },
+    { keys: ['pasta med räkor','räkpasta'], kcal: 560, stars: 3 },
+    { keys: ['lasagne'], kcal: 680, stars: 2 },
+    { keys: ['pasta'], kcal: 560, stars: 3 },
+    // Pizza/Snabbmat
+    { keys: ['pizza'], kcal: 820, stars: 1 },
+    { keys: ['hamburgare','burger'], kcal: 760, stars: 1 },
+    { keys: ['kebab','döner'], kcal: 700, stars: 2 },
+    { keys: ['tacos','taco'], kcal: 680, stars: 2 },
+    { keys: ['wrap','burrito'], kcal: 560, stars: 2 },
+    { keys: ['pommes','pommes frites'], kcal: 480, stars: 1 },
+    { keys: ['hotdog','varmkorv'], kcal: 420, stars: 1 },
+    // Kött/Fisk
+    { keys: ['laxfilé','lax med','grillad lax','ugnslax'], kcal: 460, stars: 5 },
+    { keys: ['lax'], kcal: 440, stars: 5 },
+    { keys: ['torsk','kolja','fiskfilé','ugnsfisk'], kcal: 340, stars: 5 },
+    { keys: ['räkor','räkröra'], kcal: 280, stars: 5 },
+    { keys: ['sushi'], kcal: 440, stars: 4 },
+    { keys: ['kycklingfilé','grillad kyckling','ugnkyckling'], kcal: 420, stars: 5 },
+    { keys: ['kyckling'], kcal: 460, stars: 4 },
+    { keys: ['köttbullar'], kcal: 560, stars: 3 },
+    { keys: ['biff','entrecote','oxfilé','ryggbiff'], kcal: 540, stars: 3 },
+    { keys: ['fläskkotlett','fläsk'], kcal: 520, stars: 3 },
+    { keys: ['falukorv','prinskorv','chorizo','korv'], kcal: 500, stars: 2 },
+    // Vegetariskt
+    { keys: ['linser','röda linser','gröna linser'], kcal: 380, stars: 5 },
+    { keys: ['kikärtor','hummus'], kcal: 360, stars: 5 },
+    { keys: ['bönsoppa','bönor','kidney'], kcal: 340, stars: 5 },
+    { keys: ['tofu'], kcal: 320, stars: 5 },
+    { keys: ['wok'], kcal: 480, stars: 4 },
+    { keys: ['curry','röd curry','grön curry'], kcal: 540, stars: 4 },
+    { keys: ['stir fry'], kcal: 460, stars: 4 },
+    // Tillbehör/Enkelt
+    { keys: ['risotto'], kcal: 520, stars: 3 },
+    { keys: ['ris med'], kcal: 440, stars: 3 },
+    { keys: ['ris'], kcal: 360, stars: 3 },
+    { keys: ['potatis','potatismos'], kcal: 300, stars: 3 },
+    { keys: ['baguette','vitlöksbröd'], kcal: 340, stars: 2 },
+    // Snacks/Dessert
+    { keys: ['frukt','äpple','banan','apelsin','päron','mango'], kcal: 120, stars: 5 },
+    { keys: ['bär','blåbär','hallon','jordgubbar','jordgubbe'], kcal: 80, stars: 5 },
+    { keys: ['nötter','mandel','cashew','valnöt','pistasch'], kcal: 200, stars: 4 },
+    { keys: ['glass'], kcal: 300, stars: 1 },
+    { keys: ['kaka','kex','cookie','muffin'], kcal: 280, stars: 1 },
+    { keys: ['choklad'], kcal: 260, stars: 1 },
+    { keys: ['godis','skumgodis','lakris'], kcal: 300, stars: 1 },
+    { keys: ['chips'], kcal: 320, stars: 1 },
+  ]
+  const PORTION_MULT = { S: 0.65, M: 1.0, L: 1.45 }
+
+  function setMealPortion(p) {
+    mealPortion = p
+    ;['S','M','L'].forEach(x => document.getElementById('portion-' + x)?.classList.toggle('active', x === p))
+    onMealDescInput()
+  }
+
+  function suggestFromDesc(desc) {
+    if (!desc || desc.length < 3) return null
+    const d = desc.toLowerCase()
+    let best = null, bestLen = 0
+    for (const food of FOOD_DB) {
+      for (const key of food.keys) {
+        if (d.includes(key) && key.length > bestLen) { best = food; bestLen = key.length }
+      }
+    }
+    if (!best) return null
+    const mult = PORTION_MULT[mealPortion] || 1
+    return { kcal: Math.round(best.kcal * mult / 10) * 10, stars: best.stars }
+  }
+
+  function onMealDescInput() {
+    const desc = document.getElementById('m-desc')?.value || ''
+    const suggestion = suggestFromDesc(desc)
+    const label = document.getElementById('m-suggest-label')
+    const calInput = document.getElementById('m-cal')
+    if (suggestion) {
+      // Fyll bara i om fältet är tomt eller hade ett tidigare förslag
+      if (!calInput._manualEdit) calInput.value = suggestion.kcal
+      if (!document.getElementById('m-health-stars')._manualEdit) {
+        healthScore = suggestion.stars
+        updateStars('m-health-stars', suggestion.stars)
+      }
+      if (label) label.textContent = '✨ förslag baserat på beskrivningen'
+    } else {
+      if (label) label.textContent = desc.length > 3 ? 'Ingen matchning — fyll i manuellt' : ''
+    }
+  }
   let sleepQuality = 0
   let bodyFeeling = 0
   let energyLevel = 0
@@ -1548,6 +1696,9 @@
   function setHealthScore(n) {
     healthScore = n
     updateStars('m-health-stars', n)
+    // Markera som manuellt redigerat
+    const el = document.getElementById('m-health-stars')
+    if (el) el._manualEdit = true
   }
 
   async function saveMeal() {
@@ -1568,8 +1719,14 @@
     document.getElementById('m-desc').value = ''
     document.getElementById('m-cal').value = ''
     document.getElementById('m-comment').value = ''
+    document.getElementById('m-suggest-label').textContent = ''
+    const calInput = document.getElementById('m-cal')
+    if (calInput) calInput._manualEdit = false
+    const starsEl = document.getElementById('m-health-stars')
+    if (starsEl) starsEl._manualEdit = false
     healthScore = 0
     updateStars('m-health-stars', 0)
+    setMealPortion('M')
     loadMeals()
     updateCalToday()
   }
