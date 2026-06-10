@@ -1123,7 +1123,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-10 v45'
+  const APP_VERSION = '2026-06-10 v46'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1743,6 +1743,8 @@
     updateCalToday()
   }
 
+  const _mealCache = {}
+
   async function loadMeals() {
     const sevenAgo = new Date(); sevenAgo.setDate(sevenAgo.getDate() - 6)
     const { data } = await db.from('meals').select('*').gte('date', localDate(sevenAgo)).order('date', { ascending: false }).order('created_at', { ascending: false })
@@ -1750,13 +1752,13 @@
     if (!data?.length) { list.innerHTML = '<div class="empty">Inga måltider loggade.</div>'; return }
     const typeIcons = { frukost: 'sunrise', lunch: 'sun', middag: 'moon', mellanmål: 'apple' }
     const byDate = {}
-    data.forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m) })
+    data.forEach(m => { _mealCache[m.id] = m; if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m) })
     let html = ''
     for (const date of Object.keys(byDate).sort().reverse()) {
       const label = date === today ? 'Idag' : date === prevDay(today) ? 'Igår' : fmtDate(date)
       html += `<div class="date-header">${label}</div>`
       html += byDate[date].map(m => `
-        <div class="item-card" style="cursor:pointer;" onclick="openEditMeal('${m.id}', ${JSON.stringify(m.description||'')}, ${m.calories != null ? m.calories : 'null'}, ${m.health_score || 0})">
+        <div class="item-card" style="cursor:pointer;" onclick="openEditMealById('${m.id}')">
           <div class="item-top">
             <span class="item-title"><i data-lucide="${typeIcons[m.meal_type] || 'utensils'}"></i> ${capitalize(m.meal_type || 'Måltid')}</span>
             ${m.health_score ? `<span class="health-badge hb-${m.health_score}">${m.health_score}★</span>` : '<span style="color:var(--dim);font-size:0.75rem;line-height:1;">✎ redigera</span>'}
@@ -1767,6 +1769,12 @@
     }
     list.innerHTML = html
     lucide.createIcons()
+  }
+
+  function openEditMealById(id) {
+    const m = _mealCache[id]
+    if (!m) return
+    openEditMeal(id, m.description, m.calories, m.health_score)
   }
 
 
