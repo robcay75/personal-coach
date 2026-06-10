@@ -1123,7 +1123,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-10 v46'
+  const APP_VERSION = '2026-06-10 v47'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -2692,11 +2692,12 @@
     if (!_editMealId) return
     const desc = document.getElementById('em-desc').value.trim()
     const kcal = parseInt(document.getElementById('em-cal').value)
-    const { error } = await db.from('meals').update({
-      description: desc || undefined,
-      calories: isNaN(kcal) ? null : kcal,
-      health_score: _editMealStars || null
-    }).eq('id', _editMealId)
+    // Read visual star state as source of truth (counts buttons with class 'on')
+    const visualStars = Array.from(document.querySelectorAll('#em-health-stars button')).filter(b => b.classList.contains('on')).length
+    const starsToSave = visualStars || _editMealStars || null
+    const updates = { calories: isNaN(kcal) ? null : kcal, health_score: starsToSave }
+    if (desc) updates.description = desc
+    const { error } = await db.from('meals').update(updates).eq('id', _editMealId)
     if (error) { alert('Kunde inte spara: ' + error.message); return }
     closeEditMeal()
     loadMeals(); updateCalToday()
@@ -2746,8 +2747,8 @@
     </div>
 
     <div style="display:flex;gap:10px;margin-top:4px;">
-      <button class="btn-secondary" style="flex:1;" onclick="closeEditMeal()">Avbryt</button>
-      <button class="btn-primary" style="flex:2;" onclick="saveEditMeal()">Spara</button>
+      <button type="button" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;font-weight:600;padding:12px;cursor:pointer;font-family:inherit;" onclick="closeEditMeal()">Avbryt</button>
+      <button type="button" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:0.95rem;font-weight:600;padding:12px;cursor:pointer;font-family:inherit;" onclick="saveEditMeal()">Spara</button>
     </div>
   </div>
 </div>
