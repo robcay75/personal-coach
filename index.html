@@ -358,6 +358,18 @@
     .hb-4 { background: #14532d; color: #4ade80; }
     .hb-5 { background: #052e16; color: #bbf7d0; }
 
+    /* ── Edit-meal bottom sheet ── */
+    .edit-meal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200;
+    }
+    .edit-meal-overlay.open { display: flex; align-items: flex-end; }
+    .edit-meal-sheet {
+      background: var(--surface); border-radius: 16px 16px 0 0; padding: 20px 20px calc(env(safe-area-inset-bottom,0px) + 20px);
+      width: 100%; max-width: 540px; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .edit-meal-sheet h3 { margin: 0 0 4px; font-size: 1rem; }
+
     /* ── Export ── */
     .export-area {
       background: var(--surface2);
@@ -1111,7 +1123,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-10 v44'
+  const APP_VERSION = '2026-06-10 v45'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1744,12 +1756,12 @@
       const label = date === today ? 'Idag' : date === prevDay(today) ? 'Igår' : fmtDate(date)
       html += `<div class="date-header">${label}</div>`
       html += byDate[date].map(m => `
-        <div class="item-card">
+        <div class="item-card" style="cursor:pointer;" onclick="openEditMeal('${m.id}', ${JSON.stringify(m.description||'')}, ${m.calories != null ? m.calories : 'null'}, ${m.health_score || 0})">
           <div class="item-top">
             <span class="item-title"><i data-lucide="${typeIcons[m.meal_type] || 'utensils'}"></i> ${capitalize(m.meal_type || 'Måltid')}</span>
-            ${m.health_score ? `<span class="health-badge hb-${m.health_score}">${m.health_score}</span>` : ''}
+            ${m.health_score ? `<span class="health-badge hb-${m.health_score}">${m.health_score}★</span>` : '<span style="color:var(--dim);font-size:0.75rem;line-height:1;">✎ redigera</span>'}
           </div>
-          <div class="item-meta">${m.description} · <span class="cal-edit" data-id="${m.id}" onclick="editMealCal(this)">${m.calories != null ? m.calories + ' kcal' : '<span style="color:var(--dim)">+ kcal</span>'}</span></div>
+          <div class="item-meta">${m.description || '<em style="color:var(--dim)">ingen beskrivning</em>'} · ${m.calories != null ? m.calories + ' kcal' : '<span style="color:var(--dim)">+ kcal</span>'}</div>
           ${m.comment ? `<div class="item-note">${m.comment}</div>` : ''}
         </div>`).join('')
     }
@@ -1757,23 +1769,6 @@
     lucide.createIcons()
   }
 
-  function editMealCal(el) {
-    const id = el.dataset.id
-    const cur = parseInt(el.textContent)
-    const input = document.createElement('input')
-    input.type = 'number'
-    input.value = isNaN(cur) ? '' : cur
-    input.style.cssText = 'width:70px;background:var(--surface2);border:1px solid var(--accent);border-radius:6px;color:inherit;padding:2px 6px;font-size:inherit;font-family:inherit;'
-    el.replaceWith(input)
-    input.focus(); input.select()
-    async function save() {
-      const kcal = parseInt(input.value)
-      await db.from('meals').update({ calories: isNaN(kcal) ? null : kcal }).eq('id', id)
-      loadMeals(); updateCalToday()
-    }
-    input.addEventListener('blur', save)
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') loadMeals() })
-  }
 
   function calcTDEE() {
     if (!profile) return null
@@ -2617,6 +2612,137 @@
   })
 
   init()
+
+  /* ── Edit-meal bottom sheet ── */
+  let _editMealId = null
+  let _editMealPortion = 'M'
+  let _editMealStars = 0
+
+  function openEditMeal(id, desc, calories, health_score) {
+    _editMealId = id
+    _editMealPortion = 'M'
+    _editMealStars = health_score || 0
+
+    const overlay = document.getElementById('edit-meal-overlay')
+    overlay.classList.add('open')
+
+    document.getElementById('em-desc').value = desc || ''
+    document.getElementById('em-desc')._manualEdit = false
+    document.getElementById('em-cal').value = calories != null ? calories : ''
+    document.getElementById('em-cal')._manualEdit = calories != null
+    updateStars('em-health-stars', _editMealStars)
+    document.getElementById('em-health-stars')._manualEdit = health_score > 0
+    document.getElementById('em-suggest-label').textContent = ''
+
+    setEditMealPortion('M')
+    onEditMealDescInput()
+  }
+
+  function closeEditMeal() {
+    document.getElementById('edit-meal-overlay').classList.remove('open')
+    _editMealId = null
+  }
+
+  function setEditMealPortion(p) {
+    _editMealPortion = p
+    ;['S','M','L'].forEach(x => document.getElementById('em-portion-' + x)?.classList.toggle('active', x === p))
+    onEditMealDescInput()
+  }
+
+  function onEditMealDescInput() {
+    const desc = document.getElementById('em-desc')?.value || ''
+    const sugg = suggestFromDescWithPortion(desc, _editMealPortion)
+    const label = document.getElementById('em-suggest-label')
+    const calInput = document.getElementById('em-cal')
+    if (sugg) {
+      if (!calInput._manualEdit) calInput.value = sugg.kcal
+      if (!document.getElementById('em-health-stars')._manualEdit) {
+        _editMealStars = sugg.stars
+        updateStars('em-health-stars', sugg.stars)
+      }
+      if (label) label.textContent = '✨ förslag baserat på beskrivningen'
+    } else {
+      if (label) label.textContent = desc.length > 3 ? 'Ingen matchning — fyll i manuellt' : ''
+    }
+  }
+
+  function suggestFromDescWithPortion(desc, portion) {
+    if (!desc || desc.length < 3) return null
+    const d = desc.toLowerCase()
+    let best = null, bestLen = 0
+    for (const food of FOOD_DB) {
+      for (const key of food.keys) {
+        if (d.includes(key) && key.length > bestLen) { best = food; bestLen = key.length }
+      }
+    }
+    if (!best) return null
+    const mult = PORTION_MULT[portion] || 1
+    return { kcal: Math.round(best.kcal * mult / 10) * 10, stars: best.stars }
+  }
+
+  async function saveEditMeal() {
+    if (!_editMealId) return
+    const desc = document.getElementById('em-desc').value.trim()
+    const kcal = parseInt(document.getElementById('em-cal').value)
+    const { error } = await db.from('meals').update({
+      description: desc || undefined,
+      calories: isNaN(kcal) ? null : kcal,
+      health_score: _editMealStars || null
+    }).eq('id', _editMealId)
+    if (error) { alert('Kunde inte spara: ' + error.message); return }
+    closeEditMeal()
+    loadMeals(); updateCalToday()
+  }
+
+  function setEditMealStars(n) {
+    _editMealStars = n
+    updateStars('em-health-stars', n)
+    document.getElementById('em-health-stars')._manualEdit = true
+  }
 </script>
+
+<!-- Edit-meal bottom sheet -->
+<div id="edit-meal-overlay" class="edit-meal-overlay" onclick="if(event.target===this)closeEditMeal()">
+  <div class="edit-meal-sheet">
+    <h3>Redigera måltid</h3>
+
+    <div>
+      <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Beskrivning</label>
+      <textarea id="em-desc" rows="2" style="width:100%;resize:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:inherit;padding:8px;font-size:0.95rem;font-family:inherit;box-sizing:border-box;" oninput="this._manualEdit=false;onEditMealDescInput()"></textarea>
+    </div>
+
+    <div>
+      <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Portion</label>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="portion-btn" id="em-portion-S" onclick="setEditMealPortion('S')">S</button>
+        <button type="button" class="portion-btn active" id="em-portion-M" onclick="setEditMealPortion('M')">M</button>
+        <button type="button" class="portion-btn" id="em-portion-L" onclick="setEditMealPortion('L')">L</button>
+      </div>
+    </div>
+
+    <div>
+      <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Kalorier (kcal)</label>
+      <input id="em-cal" type="number" min="0" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:inherit;padding:8px 10px;font-size:0.95rem;font-family:inherit;box-sizing:border-box;" oninput="this._manualEdit=true" />
+      <div id="em-suggest-label" style="font-size:0.7rem;color:var(--muted);margin-top:3px;min-height:14px;"></div>
+    </div>
+
+    <div>
+      <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Hälsa</label>
+      <div id="em-health-stars" class="star-row">
+        <button type="button" onclick="setEditMealStars(1)">★</button>
+        <button type="button" onclick="setEditMealStars(2)">★</button>
+        <button type="button" onclick="setEditMealStars(3)">★</button>
+        <button type="button" onclick="setEditMealStars(4)">★</button>
+        <button type="button" onclick="setEditMealStars(5)">★</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn-secondary" style="flex:1;" onclick="closeEditMeal()">Avbryt</button>
+      <button class="btn-primary" style="flex:2;" onclick="saveEditMeal()">Spara</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
