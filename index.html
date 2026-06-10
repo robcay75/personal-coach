@@ -38,7 +38,7 @@
     }
 
     /* ── Layout ── */
-    .tab-content { display: none; padding: 20px 16px 8px; max-width: 540px; margin: 0 auto; }
+    .tab-content { display: none; padding: 20px 16px calc(var(--nav-height) + 24px); max-width: 540px; margin: 0 auto; }
     .tab-content.active { display: block; }
 
     /* ── Bottom nav ── */
@@ -1082,7 +1082,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-09 v36'
+  const APP_VERSION = '2026-06-10 v37'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1287,12 +1287,19 @@
       const plannedPerWeek = totalLoss / Math.max(1, totalWeeks)
       const actualRate   = lostSoFar / Math.max(1, (new Date() - new Date(weights[weights.length - 1].date + 'T00:00:00')) / (7 * 86400000))
 
+      const elapsedWeeks = (new Date() - new Date(weights[weights.length - 1].date + 'T00:00:00')) / (7 * 86400000)
+      const shouldHaveLost = plannedPerWeek * elapsedWeeks
+      const diff = lostSoFar - shouldHaveLost // positiv = före plan
+      const tolerance = Math.max(0.2, shouldHaveLost * 0.10)
+
       if (remaining <= 0) {
         statusIcon = '🏆'; statusText = 'Målvikten nådd!'
-      } else if (actualRate >= plannedPerWeek * 0.85) {
-        statusIcon = '✅'; statusText = `På planen — behöver ${neededPerWeek} kg/vecka`
+      } else if (Math.abs(diff) <= tolerance) {
+        statusIcon = '✅'; statusText = `Enligt plan · ${neededPerWeek} kg/v kvar`
+      } else if (diff > 0) {
+        statusIcon = '🟢'; statusText = `Före plan: +${diff.toFixed(1)} kg · ${neededPerWeek} kg/v kvar`
       } else {
-        statusIcon = '⚠️'; statusText = `Lite efter — behöver ${neededPerWeek} kg/vecka framåt`
+        statusIcon = '⚠️'; statusText = `Efter plan: ${diff.toFixed(1)} kg · ${neededPerWeek} kg/v kvar`
       }
     } else {
       statusText = remaining > 0 ? `${remaining.toFixed(1)} kg kvar till målet` : '🏆 Målvikten nådd!'
@@ -1521,7 +1528,7 @@
   }
 
   async function loadWorkouts() {
-    const { data } = await db.from('workouts').select('*').order('date', { ascending: false }).limit(15)
+    const { data } = await db.from('workouts').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }).limit(15)
     const list = document.getElementById('workout-list')
     if (!data?.length) { list.innerHTML = '<div class="empty">Inga pass loggade ännu.</div>'; return }
     const icons = { simning: 'waves', löpning: 'footprints', cykling: 'bike', gym: 'dumbbell', annat: 'zap', 'pendling-cykling': 'bike', 'pendling-promenad': 'footprints' }
