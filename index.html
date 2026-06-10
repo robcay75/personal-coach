@@ -1082,7 +1082,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-10 v39'
+  const APP_VERSION = '2026-06-10 v40'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -2273,7 +2273,7 @@
         })
         if (!putResp.ok) {
           const putErr = await putResp.text()
-          console.warn('Strava PUT (privacy/RPE) misslyckades:', putResp.status, putErr)
+          throw new Error(`Aktivitet skapad men privacy/RPE misslyckades (HTTP ${putResp.status}): ${putErr}`)
         }
       }
     }
