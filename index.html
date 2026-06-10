@@ -1082,7 +1082,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-10 v42'
+  const APP_VERSION = '2026-06-10 v43'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -2238,8 +2238,8 @@
     const startDate = new Date(y, m - 1, d, startHour, 30, 0)
 
     const { data: existing } = await db.from('workouts').select('strava_activity_id').eq('id', workoutId).maybeSingle()
-    const privacyBody = { visibility: 'only_me', commute: true, hide_from_home: true }
-    const putBody = { name, description: `${count} t/r loggat via Personal Coach`, perceived_exertion: commuteRpe, ...privacyBody }
+    const privacyBody = { commute: true, hide_from_home: true }
+    const putBody = { name, description: `${count} t/r loggat via Personal Coach`, ...privacyBody }
 
     const doPut = async (activityId) => {
       const r = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
@@ -2289,11 +2289,11 @@
 
       if (activityId) {
         await db.from('workouts').update({ strava_activity_id: activityId }).eq('id', workoutId)
-        // Sätt privat + RPE via PUT (POST stöder inte visibility/perceived_exertion)
+        // Sätt commute + hide_from_home via PUT (POST stöder det inte)
         const putResp = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...privacyBody, perceived_exertion: commuteRpe })
+          body: JSON.stringify(putBody)
         })
         if (!putResp.ok) {
           const putErr = await putResp.text()
