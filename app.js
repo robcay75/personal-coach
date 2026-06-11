@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-11 v50'
+const APP_VERSION = '2026-06-11 v51'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -478,51 +478,34 @@ async function logCommute(type) {
   const km  = isBike ? settings.commute_bike_km  : settings.commute_walk_km
   const min = isBike ? settings.commute_bike_min : settings.commute_walk_min
   const kcalPerMin = isBike ? settings.commute_bike_kcal_per_min : settings.commute_walk_kcal_per_min
+  const kcalEstimate = Math.round(kcalPerMin * min * 2)
 
-  const { data: existing } = await db.from('workouts')
-    .select('id, duration_minutes, distance_km, notes')
-    .eq('date', today)
-    .eq('type', dbType)
-    .maybeSingle()
-
-  const count = existing ? (parseInt(existing.notes?.match(/(\d+) t\/r/)?.[1] || 1) + 1) : 1
-  const totalMin = min * 2 * count
-  const totalKm  = Math.round(km * 2 * count * 10) / 10
-  const kcalEstimate = Math.round(kcalPerMin * totalMin)
-
-  let error
-  if (existing) {
-    ;({ error } = await db.from('workouts').update({
-      duration_minutes: totalMin,
-      distance_km: totalKm,
-      calories: kcalEstimate,
-      notes: `${count} t/r`,
-      perceived_exertion: commuteRpe
-    }).eq('id', existing.id))
-  } else {
-    ;({ error } = await db.from('workouts').insert({
-      type: dbType, date: today,
-      duration_minutes: totalMin,
-      distance_km: totalKm,
-      calories: kcalEstimate,
-      notes: `${count} t/r`,
-      perceived_exertion: commuteRpe
-    }))
-  }
+  const { error, data: inserted } = await db.from('workouts').insert({
+    type: dbType, date: today,
+    duration_minutes: min * 2,
+    distance_km: Math.round(km * 2 * 10) / 10,
+    calories: kcalEstimate,
+    notes: '1 t/r',
+    perceived_exertion: commuteRpe
+  }).select('id').single()
 
   if (error) return setStatus('commute-status', 'Fel: ' + error.message, true)
-  setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat! ${count} t/r · ${kcalEstimate} kcal`)
 
-  const { data: saved } = await db.from('workouts').select('id, strava_activity_id').eq('date', today).eq('type', dbType).maybeSingle()
-  if (saved) {
-    const token = await getStravaToken()
-    if (token) {
-      try {
-        await pushToStrava(token, saved.id, dbType, count, totalMin, totalKm)
-        setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat & synkat! ${count} t/r · ${kcalEstimate} kcal`)
-      } catch (e) {
-        setStatus('commute-status', `${type === 'cykling' ? '🚴' : '🚶'} Loggat! ${count} t/r · ${kcalEstimate} kcal (Strava: ${e.message})`, true)
-      }
+  // Räkna totalt antal pass av denna typ idag (för visning)
+  const { count: totalCount } = await db.from('workouts')
+    .select('id', { count: 'exact', head: true })
+    .eq('date', today).eq('type', dbType)
+
+  const emoji = type === 'cykling' ? '🚴' : '🚶'
+  setStatus('commute-status', `${emoji} Loggat! ${totalCount} t/r idag · ${kcalEstimate} kcal/tur`)
+
+  const token = await getStravaToken()
+  if (token) {
+    try {
+      await pushToStrava(token, inserted.id, dbType, totalCount, min * 2, Math.round(km * 2 * 10) / 10)
+      setStatus('commute-status', `${emoji} Loggat & synkat! ${totalCount} t/r idag · ${kcalEstimate} kcal/tur`)
+    } catch (e) {
+      setStatus('commute-status', `${emoji} Loggat! ${totalCount} t/r idag · ${kcalEstimate} kcal/tur (Strava: ${e.message})`, true)
     }
   }
 
@@ -531,11 +514,11 @@ async function logCommute(type) {
 }
 
 async function loadCommuteCounts() {
-  const { data } = await db.from('workouts').select('type, notes').eq('date', today).in('type', ['pendling-cykling', 'pendling-promenad'])
-  const bike = data?.find(d => d.type === 'pendling-cykling')
-  const walk = data?.find(d => d.type === 'pendling-promenad')
-  document.getElementById('commute-bike-count').textContent = `Idag: ${bike ? bike.notes : '0 t/r'}`
-  document.getElementById('commute-walk-count').textContent = `Idag: ${walk ? walk.notes : '0 t/r'}`
+  const { data } = await db.from('workouts').select('type').eq('date', today).in('type', ['pendling-cykling', 'pendling-promenad'])
+  const bikeCount = (data || []).filter(d => d.type === 'pendling-cykling').length
+  const walkCount = (data || []).filter(d => d.type === 'pendling-promenad').length
+  document.getElementById('commute-bike-count').textContent = `Idag: ${bikeCount} t/r`
+  document.getElementById('commute-walk-count').textContent = `Idag: ${walkCount} t/r`
 }
 
 async function saveWorkout() {
