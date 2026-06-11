@@ -12,6 +12,23 @@
 <body>
 
 <!-- ═══════════════════════════════════
+     LOGIN
+═══════════════════════════════════ -->
+<div id="login-screen" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px;">
+  <div style="font-size:2.4rem; font-weight:800; margin-bottom:8px;">🏋️</div>
+  <div style="font-size:1.5rem; font-weight:700; margin-bottom:6px;">Personal Coach</div>
+  <div style="color:var(--muted); margin-bottom:32px; font-size:0.9rem; text-align:center;">Ange din e-postadress så skickar vi en inloggningslänk.</div>
+  <input type="email" id="login-email" placeholder="din@email.se" style="width:100%; max-width:320px; margin-bottom:12px;" />
+  <button class="btn btn-primary" style="width:100%; max-width:320px;" onclick="sendMagicLink()">Skicka inloggningslänk</button>
+  <div id="login-status" style="margin-top:16px; font-size:0.88rem; color:var(--muted); text-align:center;"></div>
+</div>
+
+<!-- ═══════════════════════════════════
+     APP (dolt tills inloggad)
+═══════════════════════════════════ -->
+<div id="app" style="display:none;">
+
+<!-- ═══════════════════════════════════
      HEM
 ═══════════════════════════════════ -->
 <div id="tab-home" class="tab-content active">
@@ -552,6 +569,11 @@
     <button class="btn btn-primary" onclick="saveSettings()">Spara inställningar</button>
     <div id="settings-status" class="status"></div>
   </div>
+
+  <div class="card" style="text-align:center;">
+    <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;" id="logged-in-as"></div>
+    <button class="btn btn-ghost" onclick="signOut()">Logga ut</button>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════
@@ -620,6 +642,8 @@
     </div>
   </div>
 </div>
+
+</div><!-- /#app -->
 
 <script src="app.js"></script>
 </body>

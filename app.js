@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-11 v51'
+const APP_VERSION = '2026-06-11 v52'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -12,6 +12,7 @@ const STRAVA_CLIENT_SECRET = '5b2aff384b879707ac27575f77f32b2f389e0abe'
 const STRAVA_REDIRECT_URI  = 'https://robcay75.github.io/personal-coach/'
 
 // ── State ─────────────────────────────────────────────────
+let currentUser = null
 let profile = null
 let currentTab = 'home'
 let ciMode = 'morning'
@@ -187,7 +188,7 @@ async function saveProfile() {
   if (profile?.id) {
     ;({ error } = await db.from('profiles').update(data).eq('id', profile.id))
   } else {
-    ;({ error } = await db.from('profiles').insert(data))
+    ;({ error } = await db.from('profiles').insert({ ...data, user_id: currentUser.id }))
   }
 
   if (error) return setStatus('p-status', 'Fel: ' + error.message, true)
@@ -463,7 +464,7 @@ async function saveSettings() {
   if (existing) {
     ;({ error } = await db.from('user_settings').update(updated).eq('id', existing.id))
   } else {
-    ;({ error } = await db.from('user_settings').insert(updated))
+    ;({ error } = await db.from('user_settings').insert({ ...updated, user_id: currentUser.id }))
   }
   if (error) return setStatus('settings-status', 'Fel: ' + error.message, true)
   Object.assign(settings, updated)
@@ -481,6 +482,7 @@ async function logCommute(type) {
   const kcalEstimate = Math.round(kcalPerMin * min * 2)
 
   const { error, data: inserted } = await db.from('workouts').insert({
+    user_id: currentUser.id,
     type: dbType, date: today,
     duration_minutes: min * 2,
     distance_km: Math.round(km * 2 * 10) / 10,
@@ -526,6 +528,7 @@ async function saveWorkout() {
   if (!duration || duration < 1) return setStatus('w-status', 'Fyll i tid.', true)
 
   const { error } = await db.from('workouts').insert({
+    user_id: currentUser.id,
     type: val('w-type'),
     date: val('w-date'),
     duration_minutes: duration,
@@ -608,6 +611,7 @@ async function saveMeal() {
   if (!desc) return setStatus('m-status', 'Beskriv måltiden.', true)
 
   const { error } = await db.from('meals').insert({
+    user_id: currentUser.id,
     date: val('m-date'),
     meal_type: val('m-type'),
     description: desc,
@@ -668,6 +672,7 @@ async function skipBreakfast() {
   const btn = document.getElementById('skip-breakfast-btn')
   if (btn) btn.disabled = true
   const { error } = await db.from('meals').insert({
+    user_id: currentUser.id,
     date: today, meal_type: 'frukost', description: 'Ingen frukost · fasta', calories: 0, health_score: 5
   })
   if (error) { alert('Kunde inte logga: ' + error.message); if (btn) btn.disabled = false; return }
@@ -741,9 +746,10 @@ async function saveWeight() {
   if (kg < 30 || kg > 150) return setStatus('wt-status', 'Vikt måste vara mellan 30–150 kg.', true)
 
   const { error } = await db.from('weight_logs').upsert({
+    user_id: currentUser.id,
     date: val('wt-date'),
     weight_kg: kg
-  }, { onConflict: 'date' })
+  }, { onConflict: 'date,user_id' })
 
   if (error) return setStatus('wt-status', 'Fel: ' + error.message, true)
   setStatus('wt-status', 'Sparat!')
@@ -996,7 +1002,7 @@ async function saveCheckin() {
   if (existing) {
     ;({ error } = await db.from('checkins').update(payload).eq('id', existing.id))
   } else {
-    ;({ error } = await db.from('checkins').insert(payload))
+    ;({ error } = await db.from('checkins').insert({ ...payload, user_id: currentUser.id }))
   }
 
   if (error) return setStatus('ci-status', 'Fel: ' + error.message, true)
@@ -1204,8 +1210,9 @@ async function handleStravaCallback() {
     if (merida) bikeGearId = merida.id
   } catch(e) {}
 
-  await db.from('strava_tokens').delete().gte('id', '00000000-0000-0000-0000-000000000000')
+  await db.from('strava_tokens').delete().eq('user_id', currentUser.id)
   await db.from('strava_tokens').insert({
+    user_id: currentUser.id,
     access_token: data.access_token,
     refresh_token: data.refresh_token,
     expires_at: data.expires_at,
@@ -1376,6 +1383,7 @@ async function syncFromStrava() {
   if (!toImport.length) { setStatus('strava-sync-status', 'Inget nytt att hämta.'); return }
 
   const rows = toImport.map(a => ({
+    user_id: currentUser.id,
     type: mapStravaType(a.sport_type || a.type),
     date: a.start_date_local.split('T')[0],
     duration_minutes: Math.round(a.elapsed_time / 60),
@@ -1553,13 +1561,64 @@ function setEditMealStars(n) {
   document.getElementById('em-health-stars')._manualEdit = true
 }
 
-// ── Boot ──────────────────────────────────────────────────
-document.getElementById('p-goal-date').addEventListener('change', updateWeightSuggestions)
+// ── Auth ──────────────────────────────────────────────────
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex'
+  document.getElementById('app').style.display = 'none'
+}
 
-document.querySelectorAll('input, select, textarea').forEach(el => {
-  el.addEventListener('focus', () => {
-    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none'
+  document.getElementById('app').style.display = 'block'
+  const el = document.getElementById('logged-in-as')
+  if (el && currentUser) el.textContent = 'Inloggad som ' + currentUser.email
+  init()
+}
+
+async function sendMagicLink() {
+  const email = document.getElementById('login-email').value.trim()
+  const statusEl = document.getElementById('login-status')
+  if (!email) { statusEl.textContent = 'Ange en e-postadress.'; return }
+  statusEl.textContent = 'Skickar...'
+  const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } })
+  if (error) { statusEl.textContent = 'Fel: ' + error.message; return }
+  statusEl.textContent = '✓ Kolla din inbox! Klicka på länken i mejlet.'
+}
+
+async function signOut() {
+  await db.auth.signOut()
+}
+
+async function startApp() {
+  // Lyssna på auth-ändringar (magic link-callback, utloggning m.m.)
+  db.auth.onAuthStateChange((event, session) => {
+    currentUser = session?.user ?? null
+    if (currentUser) {
+      showApp()
+    } else {
+      showLogin()
+    }
+  })
+
+  // Kolla befintlig session vid sidladdning
+  const { data: { session } } = await db.auth.getSession()
+  currentUser = session?.user ?? null
+  if (currentUser) {
+    showApp()
+  } else {
+    showLogin()
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('p-goal-date').addEventListener('change', updateWeightSuggestions)
+
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('focus', () => {
+      setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)
+    })
   })
 })
 
-init()
+startApp()
