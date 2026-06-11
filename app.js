@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-11 v52'
+const APP_VERSION = '2026-06-11 v53'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1590,17 +1590,7 @@ async function signOut() {
 }
 
 async function startApp() {
-  // Lyssna på auth-ändringar (magic link-callback, utloggning m.m.)
-  db.auth.onAuthStateChange((event, session) => {
-    currentUser = session?.user ?? null
-    if (currentUser) {
-      showApp()
-    } else {
-      showLogin()
-    }
-  })
-
-  // Kolla befintlig session vid sidladdning
+  // Kolla befintlig session (inkl. magic link-callback i URL-fragmentet)
   const { data: { session } } = await db.auth.getSession()
   currentUser = session?.user ?? null
   if (currentUser) {
@@ -1608,6 +1598,16 @@ async function startApp() {
   } else {
     showLogin()
   }
+
+  // Lyssna på framtida ändringar (utloggning, token-refresh m.m.)
+  db.auth.onAuthStateChange((event, session) => {
+    const newUser = session?.user ?? null
+    const wasLoggedIn = !!currentUser
+    const isLoggedIn  = !!newUser
+    currentUser = newUser
+    if (isLoggedIn && !wasLoggedIn) showApp()
+    if (!isLoggedIn && wasLoggedIn) showLogin()
+  })
 }
 
 // ── Boot ──────────────────────────────────────────────────
