@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-10 v49'
+const APP_VERSION = '2026-06-11 v50'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -107,11 +107,17 @@ const FOOD_DB = [
 const PORTION_MULT = { S: 0.65, M: 1.0, L: 1.45 }
 
 // ── Init ──────────────────────────────────────────────────
+function commuteKcalPerMin(type) {
+  if (type === 'pendling-cykling')  return settings.commute_bike_kcal_per_min
+  if (type === 'pendling-promenad') return settings.commute_walk_kcal_per_min
+  return 7 // generellt träningspass
+}
+
 async function init() {
   document.getElementById('version-label').textContent = APP_VERSION
   setDateDefaults()
   await handleStravaCallback()
-  await loadProfile()
+  await Promise.all([loadProfile(), loadSettings()])
   refreshTab('home')
   loadStravaStatus()
   lucide.createIcons()
@@ -412,15 +418,66 @@ function setPill(cardId, labelId, done, doneText, defaultText) {
   else { card.classList.remove('done'); label.textContent = defaultText }
 }
 
-// ── Workouts ──────────────────────────────────────────────
-const COMMUTE_DEFAULTS = {
-  'pendling-cykling':   { km: 1.9, min: 6 },
-  'pendling-promenad':  { km: 1.9, min: 18 }
+// ── Settings ──────────────────────────────────────────────
+let settings = {
+  commute_bike_km:           1.9,
+  commute_bike_min:          6,
+  commute_walk_km:           1.9,
+  commute_walk_min:          18,
+  commute_bike_kcal_per_min: 7.0,
+  commute_walk_kcal_per_min: 4.5,
+  commute_bike_start_hour:   7,
+  commute_walk_start_hour:   8,
+  strava_bike_name:          'merida'
 }
+
+async function loadSettings() {
+  const { data } = await db.from('user_settings').select('*').limit(1).maybeSingle()
+  if (data) {
+    Object.keys(settings).forEach(k => { if (data[k] != null) settings[k] = data[k] })
+    fillSettingsForm()
+  }
+}
+
+function fillSettingsForm() {
+  Object.keys(settings).forEach(k => {
+    const el = document.getElementById('s-' + k)
+    if (el) el.value = settings[k]
+  })
+}
+
+async function saveSettings() {
+  const updated = {
+    commute_bike_km:           floatVal('s-commute_bike_km')           ?? settings.commute_bike_km,
+    commute_bike_min:          intVal('s-commute_bike_min')            ?? settings.commute_bike_min,
+    commute_walk_km:           floatVal('s-commute_walk_km')           ?? settings.commute_walk_km,
+    commute_walk_min:          intVal('s-commute_walk_min')            ?? settings.commute_walk_min,
+    commute_bike_kcal_per_min: floatVal('s-commute_bike_kcal_per_min') ?? settings.commute_bike_kcal_per_min,
+    commute_walk_kcal_per_min: floatVal('s-commute_walk_kcal_per_min') ?? settings.commute_walk_kcal_per_min,
+    commute_bike_start_hour:   intVal('s-commute_bike_start_hour')     ?? settings.commute_bike_start_hour,
+    commute_walk_start_hour:   intVal('s-commute_walk_start_hour')     ?? settings.commute_walk_start_hour,
+    strava_bike_name:          document.getElementById('s-strava_bike_name')?.value.trim() || settings.strava_bike_name
+  }
+  const { data: existing } = await db.from('user_settings').select('id').limit(1).maybeSingle()
+  let error
+  if (existing) {
+    ;({ error } = await db.from('user_settings').update(updated).eq('id', existing.id))
+  } else {
+    ;({ error } = await db.from('user_settings').insert(updated))
+  }
+  if (error) return setStatus('settings-status', 'Fel: ' + error.message, true)
+  Object.assign(settings, updated)
+  setStatus('settings-status', 'Sparat!')
+}
+
+// ── Workouts ──────────────────────────────────────────────
 
 async function logCommute(type) {
   const dbType = 'pendling-' + type
-  const defaults = COMMUTE_DEFAULTS[dbType]
+  const isBike = dbType === 'pendling-cykling'
+  const km  = isBike ? settings.commute_bike_km  : settings.commute_walk_km
+  const min = isBike ? settings.commute_bike_min : settings.commute_walk_min
+  const kcalPerMin = isBike ? settings.commute_bike_kcal_per_min : settings.commute_walk_kcal_per_min
 
   const { data: existing } = await db.from('workouts')
     .select('id, duration_minutes, distance_km, notes')
@@ -429,9 +486,9 @@ async function logCommute(type) {
     .maybeSingle()
 
   const count = existing ? (parseInt(existing.notes?.match(/(\d+) t\/r/)?.[1] || 1) + 1) : 1
-  const totalMin = defaults.min * 2 * count
-  const totalKm  = Math.round(defaults.km * 2 * count * 10) / 10
-  const kcalEstimate = Math.round((dbType === 'pendling-cykling' ? 5.5 : 3.5) * totalMin)
+  const totalMin = min * 2 * count
+  const totalKm  = Math.round(km * 2 * count * 10) / 10
+  const kcalEstimate = Math.round(kcalPerMin * totalMin)
 
   let error
   if (existing) {
@@ -668,7 +725,7 @@ async function updateCalToday() {
 
   const eaten = mealsRes.data.reduce((s, m) => s + (m.calories || 0), 0)
   const burned = (workoutsRes.data || []).reduce((s, w) => {
-    return s + (w.calories || Math.round(w.duration_minutes * (w.type === 'pendling-cykling' ? 5.5 : 7)))
+    return s + (w.calories || Math.round(w.duration_minutes * commuteKcalPerMin(w.type)))
   }, 0)
 
   const target = calcCalorieTarget()
@@ -807,7 +864,7 @@ async function drawDeficitChart() {
   const eaten = {}, burned = {}
   meals.forEach(m => { eaten[m.date] = (eaten[m.date] || 0) + (m.calories || 0) })
   workouts.forEach(w => {
-    const kcal = w.calories || Math.round(w.duration_minutes * (w.type === 'pendling-cykling' ? 5.5 : 7))
+    const kcal = w.calories || Math.round(w.duration_minutes * commuteKcalPerMin(w.type))
     burned[w.date] = (burned[w.date] || 0) + kcal
   })
 
@@ -1159,7 +1216,8 @@ async function handleStravaCallback() {
       headers: { 'Authorization': `Bearer ${data.access_token}` }
     })
     const athlete = await athleteResp.json()
-    const merida = (athlete.bikes || []).find(b => b.name?.toLowerCase().includes('merida'))
+    const bikeName = settings.strava_bike_name?.toLowerCase() || 'merida'
+    const merida = (athlete.bikes || []).find(b => b.name?.toLowerCase().includes(bikeName))
     if (merida) bikeGearId = merida.id
   } catch(e) {}
 
@@ -1229,7 +1287,7 @@ async function pushToStrava(token, workoutId, type, count, totalMin, totalKm) {
   const { data: otherCommutes } = await db.from('workouts')
     .select('id').eq('date', today).in('type', ['pendling-cykling', 'pendling-promenad']).neq('type', type)
   const isSecond = (otherCommutes || []).length > 0
-  const baseHour = type === 'pendling-cykling' ? 7 : 8
+  const baseHour = type === 'pendling-cykling' ? settings.commute_bike_start_hour : settings.commute_walk_start_hour
   const startHour = isSecond ? baseHour + 9 : baseHour
   const [y, m, d] = today.split('-').map(Number)
   const startDate = new Date(y, m - 1, d, startHour, 30, 0)
@@ -1371,8 +1429,7 @@ async function fillMissingCalories(token) {
              : detail.kilojoules > 0 ? Math.round(detail.kilojoules * 0.239)
              : null
     if (!kcal && w.duration_minutes > 0) {
-      const kcalPerMin = w.type === 'pendling-cykling' ? 5.5 : w.type === 'pendling-promenad' ? 3.5 : 7
-      kcal = Math.round(kcalPerMin * w.duration_minutes)
+      kcal = Math.round(commuteKcalPerMin(w.type) * w.duration_minutes)
     }
     if (kcal) { await db.from('workouts').update({ calories: kcal }).eq('id', w.id); updated++ }
   }
