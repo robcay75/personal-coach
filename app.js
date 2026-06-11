@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-11 v55'
+const APP_VERSION = '2026-06-11 v56'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1562,13 +1562,7 @@ function setEditMealStars(n) {
 }
 
 // ── Auth ──────────────────────────────────────────────────
-function hideLoading() {
-  const el = document.getElementById('loading-screen')
-  if (el) el.style.display = 'none'
-}
-
 function showLogin() {
-  hideLoading()
   document.getElementById('login-screen').style.display = 'flex'
   document.getElementById('app').style.display = 'none'
   const vEl = document.getElementById('login-version')
@@ -1576,7 +1570,6 @@ function showLogin() {
 }
 
 function showApp() {
-  hideLoading()
   document.getElementById('login-screen').style.display = 'none'
   document.getElementById('app').style.display = 'block'
   const el = document.getElementById('logged-in-as')
@@ -1599,25 +1592,15 @@ async function signOut() {
 }
 
 async function startApp() {
-  let resolved = false
-
-  // Fallback: om inget svar inom 6 sekunder — visa login
-  setTimeout(() => {
-    if (!resolved) { resolved = true; showLogin() }
-  }, 6000)
+  showLogin() // visa login direkt som default
 
   db.auth.onAuthStateChange((event, session) => {
-    resolved = true
     currentUser = session?.user ?? null
     if (currentUser) showApp()
     else showLogin()
   })
 
-  try {
-    await db.auth.getSession()
-  } catch (e) {
-    if (!resolved) { resolved = true; showLogin() }
-  }
+  try { await db.auth.getSession() } catch(e) {}
 }
 
 // ── Boot ──────────────────────────────────────────────────
