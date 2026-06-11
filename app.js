@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-11 v53'
+const APP_VERSION = '2026-06-11 v54'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1562,12 +1562,19 @@ function setEditMealStars(n) {
 }
 
 // ── Auth ──────────────────────────────────────────────────
+function hideLoading() {
+  const el = document.getElementById('loading-screen')
+  if (el) el.style.display = 'none'
+}
+
 function showLogin() {
+  hideLoading()
   document.getElementById('login-screen').style.display = 'flex'
   document.getElementById('app').style.display = 'none'
 }
 
 function showApp() {
+  hideLoading()
   document.getElementById('login-screen').style.display = 'none'
   document.getElementById('app').style.display = 'block'
   const el = document.getElementById('logged-in-as')
@@ -1590,24 +1597,18 @@ async function signOut() {
 }
 
 async function startApp() {
-  // Kolla befintlig session (inkl. magic link-callback i URL-fragmentet)
-  const { data: { session } } = await db.auth.getSession()
-  currentUser = session?.user ?? null
-  if (currentUser) {
-    showApp()
-  } else {
-    showLogin()
-  }
-
-  // Lyssna på framtida ändringar (utloggning, token-refresh m.m.)
+  // Sätt upp lyssnaren FÖRST — den hanterar både magic link-callback och vanlig session
   db.auth.onAuthStateChange((event, session) => {
-    const newUser = session?.user ?? null
-    const wasLoggedIn = !!currentUser
-    const isLoggedIn  = !!newUser
-    currentUser = newUser
-    if (isLoggedIn && !wasLoggedIn) showApp()
-    if (!isLoggedIn && wasLoggedIn) showLogin()
+    currentUser = session?.user ?? null
+    if (currentUser) {
+      showApp()
+    } else {
+      showLogin()
+    }
   })
+
+  // getSession() triggar onAuthStateChange om det finns en token i URL:en
+  await db.auth.getSession()
 }
 
 // ── Boot ──────────────────────────────────────────────────
