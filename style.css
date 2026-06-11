@@ -1,0 +1,595 @@
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #0f0f0f;
+  --surface: #1a1a1a;
+  --surface2: #262626;
+  --border: #2e2e2e;
+  --text: #f0f0f0;
+  --muted: #888;
+  --dim: #555;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --green: #4ade80;
+  --red: #f87171;
+  --yellow: #fbbf24;
+  --nav-height: 64px;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: calc(var(--nav-height) + 16px);
+}
+
+/* ── Layout ── */
+.tab-content { display: none; padding: 20px 16px calc(var(--nav-height) + 24px); max-width: 540px; margin: 0 auto; }
+.tab-content.active { display: block; }
+
+/* ── Bottom nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: var(--nav-height);
+  background: #111;
+  border-top: 1px solid var(--border);
+  display: flex;
+}
+
+.bottom-nav button {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--dim);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.bottom-nav button svg { width: 22px; height: 22px; }
+
+.bottom-nav button span {
+  font-size: 0.62rem;
+  letter-spacing: 0.03em;
+}
+
+/* ── Lucide icon sizing ── */
+.page-title svg { width: 20px; height: 20px; vertical-align: -3px; margin-right: 5px; }
+.stat-label svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 2px; }
+.today-pill .pill-icon svg { width: 22px; height: 22px; }
+.cb-icon svg { width: 30px; height: 30px; }
+.recovery-ring svg { width: 26px; height: 26px; }
+.item-title svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 3px; }
+.item-meta svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 2px; }
+.toggle-group svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 3px; }
+
+.bottom-nav button.active { color: var(--accent); }
+
+/* ── Cards / Sections ── */
+.card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.card-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+
+/* ── Forms ── */
+label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+  margin-top: 12px;
+}
+label:first-of-type { margin-top: 0; }
+
+input, select, textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+input:focus, select:focus, textarea:focus { border-color: #555; }
+textarea { resize: vertical; min-height: 70px; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── Buttons ── */
+.btn {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+  margin-top: 14px;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:disabled { background: var(--surface2); color: var(--dim); cursor: not-allowed; }
+.btn-ghost {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-export {
+  background: #16a34a;
+  color: #fff;
+}
+.btn-export:hover { background: #15803d; }
+
+.status {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  min-height: 18px;
+  color: var(--green);
+}
+.status.error { color: var(--red); }
+
+/* ── Home ── */
+.page-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.countdown-card {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+.countdown-card .goal-label {
+  font-size: 0.8rem;
+  color: #93c5fd;
+  margin-bottom: 4px;
+}
+.countdown-card .goal-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.countdown-card .days {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+.countdown-card .days-label {
+  font-size: 0.85rem;
+  color: #93c5fd;
+  margin-top: 4px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.stat-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+.stat-card .stat-val {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.stat-card .stat-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.today-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.today-pill {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.today-pill .pill-icon { font-size: 1.3rem; margin-bottom: 2px; }
+.today-pill.done { color: var(--green); }
+.today-pill:not(.done) { cursor: pointer; }
+.today-pill:not(.done):hover { background: var(--surface2); }
+
+/* ── Workout list ── */
+.item-list { display: flex; flex-direction: column; gap: 8px; }
+.item-card {
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.item-card .item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.item-card .item-title { font-weight: 600; font-size: 0.95rem; }
+.item-card .item-date { font-size: 0.78rem; color: var(--dim); }
+.item-card .item-meta { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+.item-card .item-note { font-size: 0.82rem; color: var(--dim); font-style: italic; margin-top: 4px; }
+
+.empty { color: var(--dim); font-size: 0.9rem; text-align: center; padding: 24px 0; }
+.date-header { font-size: 0.78rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 0 4px; }
+.date-header:first-child { padding-top: 2px; }
+.cal-edit { cursor: pointer; border-bottom: 1px dashed var(--muted); transition: color 0.15s, border-color 0.15s; }
+.cal-edit:hover { color: var(--accent); border-color: var(--accent); }
+.cal-edit input { width: 70px; background: var(--surface2); border: 1px solid var(--accent); border-radius: 6px; color: inherit; padding: 2px 6px; font-size: inherit; font-family: inherit; }
+
+/* ── Weight chart ── */
+.weight-progress {
+  margin-bottom: 8px;
+}
+.progress-bar-wrap {
+  background: var(--surface2);
+  border-radius: 999px;
+  height: 8px;
+  margin: 8px 0 4px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--green);
+  transition: width 0.4s ease;
+}
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+svg.chart {
+  width: 100%;
+  height: 120px;
+  margin-top: 8px;
+}
+
+/* ── Check-in toggle ── */
+.toggle-group {
+  display: flex;
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 14px;
+}
+.toggle-group button {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.toggle-group button.active {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ── Star rating ── */
+.star-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+.star-row button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  color: var(--dim);
+  transition: color 0.1s;
+}
+.star-row button.on { color: var(--yellow); }
+
+/* ── Meal health badge ── */
+.health-badge {
+  display: inline-block;
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 22px;
+  margin-right: 4px;
+}
+.hb-1 { background: #7f1d1d; color: #fca5a5; }
+.hb-2 { background: #78350f; color: #fcd34d; }
+.hb-3 { background: #365314; color: #86efac; }
+.hb-4 { background: #14532d; color: #4ade80; }
+.hb-5 { background: #052e16; color: #bbf7d0; }
+
+/* ── Edit-meal bottom sheet ── */
+.edit-meal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200;
+}
+.edit-meal-overlay.open { display: flex; align-items: flex-end; }
+.edit-meal-sheet {
+  background: var(--surface); border-radius: 16px 16px 0 0; padding: 20px 20px calc(env(safe-area-inset-bottom,0px) + 20px);
+  width: 100%; max-width: 540px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.edit-meal-sheet h3 { margin: 0 0 4px; font-size: 1rem; }
+
+/* ── Export ── */
+.export-area {
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: pre-wrap;
+  font-family: monospace;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 10px;
+  display: none;
+}
+
+/* ── Weight suggestions ── */
+.suggestion-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.suggestion-btn:hover { border-color: var(--accent); }
+.suggestion-btn.selected { border-color: var(--accent); background: #1e3a8a22; }
+.suggestion-btn .sug-title { font-weight: 600; font-size: 0.95rem; }
+.suggestion-btn .sug-detail { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
+/* ── Weight home curve ── */
+#wh-delta { color: var(--green); }
+#wh-delta.gained { color: var(--red); }
+
+/* ── Recovery indicator ── */
+.recovery-card {
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.recovery-card.good  { background: #052e16; }
+.recovery-card.ok    { background: #1c1a05; }
+.recovery-card.rest  { background: #1c0505; }
+.recovery-ring {
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+.recovery-ring.good { background: #14532d; }
+.recovery-ring.ok   { background: #3f3308; }
+.recovery-ring.rest { background: #450a0a; }
+.recovery-text .rec-title { font-weight: 700; font-size: 1rem; }
+.recovery-text .rec-sub   { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
+/* ── Stats grid 4-cell ── */
+.stats-grid-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* ── Weekly bar chart ── */
+.week-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 60px;
+  margin-top: 8px;
+}
+.week-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  justify-content: flex-end;
+}
+.week-bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: var(--accent);
+  min-height: 3px;
+  transition: height 0.3s ease;
+}
+.week-bar.today { background: var(--green); }
+.week-bar-label { font-size: 0.65rem; color: var(--dim); }
+
+/* ── RPE picker ── */
+.rpe-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+.rpe-row {
+  display: flex;
+  gap: 4px;
+}
+.portion-btn {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 7px 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  min-width: 44px;
+}
+.portion-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.rpe-btn {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 5px 2px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.1s;
+}
+.rpe-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── Strava sync btn ── */
+.btn-strava-sync {
+  background: #fc4c02;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-strava-sync:hover { background: #e43e00; }
+
+/* ── Commute buttons ── */
+.commute-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.commute-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 10px;
+  cursor: pointer;
+  text-align: center;
+  color: var(--text);
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.commute-btn:hover { border-color: var(--accent); background: #1e3a8a22; }
+.commute-btn .cb-icon { font-size: 1.8rem; }
+.commute-btn .cb-label { font-size: 0.85rem; font-weight: 600; margin-top: 4px; }
+.commute-btn .cb-count { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+/* ── Calorie budget bar ── */
+.cal-budget-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.cal-budget-bar-wrap {
+  background: var(--surface2);
+  border-radius: 999px;
+  height: 6px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.cal-budget-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--green);
+  transition: width 0.4s ease;
+}
+.cal-budget-bar-fill.over { background: var(--red); }
+
+/* ── Toggle switch ── */
+.toggle-switch {
+  width: 36px; height: 20px;
+  background: var(--surface2);
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: 1px solid var(--border);
+}
+.toggle-switch.on { background: var(--accent); border-color: var(--accent); }
+.toggle-knob {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.toggle-switch.on .toggle-knob { transform: translateX(16px); }
+
+/* ── Deficit chart ── */
+.deficit-positive { fill: var(--green); }
+.deficit-negative { fill: var(--red); }
+
+/* ── Misc ── */
+.section-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 14px 0;
+}
