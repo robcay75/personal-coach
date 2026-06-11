@@ -883,7 +883,10 @@
 
 
   <div class="card">
-    <div class="card-title">Måltider</div>
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+      Måltider
+      <button type="button" id="skip-breakfast-btn" onclick="skipBreakfast()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:0.8rem;font-weight:600;padding:4px 10px;cursor:pointer;font-family:inherit;">🕐 Hoppa frukost</button>
+    </div>
     <div id="meal-list" class="item-list">
       <div class="empty">Laddar...</div>
     </div>
@@ -1123,7 +1126,7 @@
 </nav>
 
 <script>
-  const APP_VERSION = '2026-06-10 v47'
+  const APP_VERSION = '2026-06-10 v48'
 
   // ── Supabase ──────────────────────────────────────────────
   const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1753,6 +1756,10 @@
     const typeIcons = { frukost: 'sunrise', lunch: 'sun', middag: 'moon', mellanmål: 'apple' }
     const byDate = {}
     data.forEach(m => { _mealCache[m.id] = m; if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m) })
+    // Hide "Hoppa frukost" if breakfast already logged today
+    const hasBreakfastToday = (byDate[today] || []).some(m => m.meal_type === 'frukost')
+    const skipBtn = document.getElementById('skip-breakfast-btn')
+    if (skipBtn) skipBtn.style.display = hasBreakfastToday ? 'none' : ''
     let html = ''
     for (const date of Object.keys(byDate).sort().reverse()) {
       const label = date === today ? 'Idag' : date === prevDay(today) ? 'Igår' : fmtDate(date)
@@ -1769,6 +1776,16 @@
     }
     list.innerHTML = html
     lucide.createIcons()
+  }
+
+  async function skipBreakfast() {
+    const btn = document.getElementById('skip-breakfast-btn')
+    if (btn) btn.disabled = true
+    const { error } = await db.from('meals').insert({
+      date: today, meal_type: 'frukost', description: 'Ingen frukost · fasta', calories: 0, health_score: 5
+    })
+    if (error) { alert('Kunde inte logga: ' + error.message); if (btn) btn.disabled = false; return }
+    loadMeals(); updateCalToday()
   }
 
   function openEditMealById(id) {
