@@ -1571,6 +1571,8 @@ function showLogin() {
   hideLoading()
   document.getElementById('login-screen').style.display = 'flex'
   document.getElementById('app').style.display = 'none'
+  const vEl = document.getElementById('login-version')
+  if (vEl) vEl.textContent = APP_VERSION
 }
 
 function showApp() {
