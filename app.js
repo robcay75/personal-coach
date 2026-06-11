@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-11 v54'
+const APP_VERSION = '2026-06-11 v55'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1599,18 +1599,25 @@ async function signOut() {
 }
 
 async function startApp() {
-  // Sätt upp lyssnaren FÖRST — den hanterar både magic link-callback och vanlig session
+  let resolved = false
+
+  // Fallback: om inget svar inom 6 sekunder — visa login
+  setTimeout(() => {
+    if (!resolved) { resolved = true; showLogin() }
+  }, 6000)
+
   db.auth.onAuthStateChange((event, session) => {
+    resolved = true
     currentUser = session?.user ?? null
-    if (currentUser) {
-      showApp()
-    } else {
-      showLogin()
-    }
+    if (currentUser) showApp()
+    else showLogin()
   })
 
-  // getSession() triggar onAuthStateChange om det finns en token i URL:en
-  await db.auth.getSession()
+  try {
+    await db.auth.getSession()
+  } catch (e) {
+    if (!resolved) { resolved = true; showLogin() }
+  }
 }
 
 // ── Boot ──────────────────────────────────────────────────
