@@ -139,7 +139,7 @@
 <div id="tab-workout" class="tab-content">
   <div class="page-title"><i data-lucide="dumbbell"></i> Träning</div>
 
-  <div class="card">
+  <div class="card" id="commute-card">
     <div class="card-title">Pendling</div>
     <div class="commute-btns">
       <button class="commute-btn" onclick="logCommute('cykling')">
@@ -519,6 +519,11 @@
 
   <div class="card">
     <div class="card-title">Pendlingsinställningar</div>
+
+    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; margin-bottom:16px;">
+      <input type="checkbox" id="s-show_commute" onchange="applyCommuteVisibility()" style="width:18px;height:18px;cursor:pointer;" />
+      Visa pendlingsknappar i träningsfliken
+    </label>
 
     <div class="row2">
       <div>

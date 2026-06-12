@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-11 v56'
+const APP_VERSION = '2026-06-11 v57'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -429,7 +429,14 @@ let settings = {
   commute_walk_kcal_per_min: 4.5,
   commute_bike_start_hour:   7,
   commute_walk_start_hour:   8,
-  strava_bike_name:          'merida'
+  strava_bike_name:          'merida',
+  show_commute:              true
+}
+
+function applyCommuteVisibility() {
+  const checked = document.getElementById('s-show_commute')?.checked ?? settings.show_commute
+  const card = document.getElementById('commute-card')
+  if (card) card.style.display = checked ? '' : 'none'
 }
 
 async function loadSettings() {
@@ -443,8 +450,11 @@ async function loadSettings() {
 function fillSettingsForm() {
   Object.keys(settings).forEach(k => {
     const el = document.getElementById('s-' + k)
-    if (el) el.value = settings[k]
+    if (!el) return
+    if (el.type === 'checkbox') el.checked = !!settings[k]
+    else el.value = settings[k]
   })
+  applyCommuteVisibility()
 }
 
 async function saveSettings() {
@@ -457,7 +467,8 @@ async function saveSettings() {
     commute_walk_kcal_per_min: floatVal('s-commute_walk_kcal_per_min') ?? settings.commute_walk_kcal_per_min,
     commute_bike_start_hour:   intVal('s-commute_bike_start_hour')     ?? settings.commute_bike_start_hour,
     commute_walk_start_hour:   intVal('s-commute_walk_start_hour')     ?? settings.commute_walk_start_hour,
-    strava_bike_name:          document.getElementById('s-strava_bike_name')?.value.trim() || settings.strava_bike_name
+    strava_bike_name:          document.getElementById('s-strava_bike_name')?.value.trim() || settings.strava_bike_name,
+    show_commute:              document.getElementById('s-show_commute')?.checked ?? settings.show_commute
   }
   const { data: existing } = await db.from('user_settings').select('id').limit(1).maybeSingle()
   let error
