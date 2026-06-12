@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-11 v57'
+const APP_VERSION = '2026-06-11 v58'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -306,15 +306,22 @@ function drawWeightHomeCurve(entries, start, target) {
   const minW = Math.min(...allW) - 1
   const maxW = Math.max(...allW) + 1
   const toY  = w => pad + (H - pad * 2) - ((w - minW) / (maxW - minW)) * (H - pad * 2)
-  const n    = entries.length + 1
-  const toX  = i => (i / (n + 1)) * W
+
+  // Datumbaserad X för hemgrafen
+  const goalDate = profile?.goal_date
+  const firstDate = new Date(entries[0].date + 'T00:00:00')
+  const goalD = goalDate ? new Date(goalDate + 'T00:00:00') : null
+  const lastEntryDate = new Date(entries[entries.length - 1].date + 'T00:00:00')
+  const maxDate = goalD && goalD > lastEntryDate ? goalD : lastEntryDate
+  const timeRange = Math.max(maxDate - firstDate, 1)
+  const toX = dateStr => ((new Date(dateStr + 'T00:00:00') - firstDate) / timeRange) * W
 
   const startPt = `0,${toY(start)}`
-  const dataPts = entries.map((e, i) => `${toX(i + 1)},${toY(e.weight_kg)}`)
+  const dataPts = entries.map(e => `${toX(e.date)},${toY(e.weight_kg)}`)
   const allPts  = [startPt, ...dataPts]
 
-  const lastX = toX(entries.length)
-  const lastY = toY(entries[entries.length - 1]?.weight_kg || start)
+  const lastX = toX(entries[entries.length - 1].date)
+  const lastY = toY(entries[entries.length - 1].weight_kg)
 
   svg.innerHTML = `
     <defs>
@@ -323,6 +330,8 @@ function drawWeightHomeCurve(entries, start, target) {
         <stop offset="100%" stop-color="#4ade80"/>
       </linearGradient>
     </defs>
+    <line x1="0" y1="${toY(start)}" x2="${W}" y2="${toY(target)}"
+      stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
     <line x1="${lastX}" y1="${lastY}" x2="${W}" y2="${toY(target)}"
       stroke="#4ade80" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.6"/>
     <polyline points="${allPts.join(' ')}" fill="none" stroke="url(#wg)"
@@ -808,34 +817,50 @@ function drawWeightChart(entries) {
   if (entries.length < 1) return
   const svg = document.getElementById('weight-chart')
   const W = 300, H = 100
+  if (!entries.length) { svg.innerHTML = ''; return }
 
-  let allWeights = entries.map(e => e.weight_kg)
-  let prognosisPoint = null
-  if (profile?.target_weight && profile?.goal_date) {
-    allWeights.push(profile.target_weight)
-    prognosisPoint = profile.target_weight
+  const startW  = profile?.start_weight
+  const targetW = profile?.target_weight
+  const goalDate = profile?.goal_date
+
+  // Datumbaserad X-axel
+  const firstDate = new Date(entries[0].date + 'T00:00:00')
+  const lastEntryDate = new Date(entries[entries.length - 1].date + 'T00:00:00')
+  const goalD = goalDate ? new Date(goalDate + 'T00:00:00') : null
+  const maxDate = goalD && goalD > lastEntryDate ? goalD : lastEntryDate
+  const timeRange = Math.max(maxDate - firstDate, 1)
+  const toX = dateStr => ((new Date(dateStr + 'T00:00:00') - firstDate) / timeRange) * W
+
+  const allW = entries.map(e => e.weight_kg)
+  if (startW)  allW.push(startW)
+  if (targetW) allW.push(targetW)
+  const minW = Math.min(...allW) - 1
+  const maxW = Math.max(...allW) + 1
+  const toY = w => (H - 4) - ((w - minW) / (maxW - minW)) * (H - 8) + 2
+
+  const pts = entries.map(e => `${toX(e.date)},${toY(e.weight_kg)}`)
+
+  // Planlinje: start_weight vid första datum → target_weight vid goal_date (gul streckad)
+  let planLine = ''
+  if (startW && targetW && goalDate) {
+    planLine = `<line x1="0" y1="${toY(startW)}" x2="${W}" y2="${toY(targetW)}"
+      stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.55"/>`
   }
 
-  const minW = Math.min(...allWeights) - 1
-  const maxW = Math.max(...allWeights) + 1
-
-  const toX = (i, total) => (i / Math.max(total - 1, 1)) * W
-  const toY = (w) => H - ((w - minW) / (maxW - minW)) * H
-
-  const pts = entries.map((e, i) => `${toX(i, entries.length)},${toY(e.weight_kg)}`)
-
+  // Prognoslinje: sista datapunkt → target (grön streckad)
   let progLine = ''
-  if (prognosisPoint !== null && entries.length > 0) {
-    const lastX = toX(entries.length - 1, entries.length)
+  if (targetW && goalDate && entries.length > 0) {
+    const lastX = toX(entries[entries.length - 1].date)
     const lastY = toY(entries[entries.length - 1].weight_kg)
-    const targetY = toY(prognosisPoint)
-    progLine = `<line x1="${lastX}" y1="${lastY}" x2="${W}" y2="${targetY}" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.7"/>`
+    progLine = `<line x1="${lastX}" y1="${lastY}" x2="${W}" y2="${toY(targetW)}"
+      stroke="#4ade80" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.7"/>`
   }
 
   svg.innerHTML = `
+    ${planLine}
     ${progLine}
     <polyline points="${pts.join(' ')}" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    ${entries.map((e, i) => `<circle cx="${toX(i, entries.length)}" cy="${toY(e.weight_kg)}" r="3" fill="#2563eb"/>`).join('')}
+    ${entries.map(e => `<circle cx="${toX(e.date)}" cy="${toY(e.weight_kg)}" r="3" fill="#2563eb"/>`).join('')}
   `
 }
 
