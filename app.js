@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v79'
+const APP_VERSION = '2026-06-15 v80'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -339,12 +339,12 @@ function drawWeightHomeCurve(entries, start, target) {
     <line x1="${lastX}" y1="${lastY}" x2="${W}" y2="${toY(target)}"
       stroke="#4ade80" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.6"/>
     <polyline points="${allPts.join(' ')}" fill="none" stroke="url(#wg)"
-      stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     ${dataPts.map((p, i) => {
       const [x, y] = p.split(',')
       const isLast = i === dataPts.length - 1
-      return `<circle cx="${x}" cy="${y}" r="${isLast ? 5 : 3}" fill="${isLast ? '#4ade80' : '#2563eb'}"
-        stroke="${isLast ? '#0f0f0f' : 'none'}" stroke-width="2"/>`
+      return `<circle cx="${x}" cy="${y}" r="${isLast ? 4 : 2}" fill="${isLast ? '#4ade80' : '#2563eb'}"
+        stroke="${isLast ? '#0f0f0f' : 'none'}" stroke-width="1.5"/>`
     }).join('')}
     <circle cx="${W}" cy="${toY(target)}" r="3" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="2,2"/>
   `
@@ -874,8 +874,8 @@ function drawWeightChart(entries) {
   svg.innerHTML = `
     ${planLine}
     ${progLine}
-    <polyline points="${pts.join(' ')}" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    ${entries.map(e => `<circle cx="${toX(e.date)}" cy="${toY(e.weight_kg)}" r="3" fill="#2563eb"/>`).join('')}
+    <polyline points="${pts.join(' ')}" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${entries.map(e => `<circle cx="${toX(e.date)}" cy="${toY(e.weight_kg)}" r="2.5" fill="#2563eb"/>`).join('')}
   `
 }
 
