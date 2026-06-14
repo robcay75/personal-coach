@@ -61,11 +61,12 @@
      HEM
 ═══════════════════════════════════ -->
 <div id="tab-home" class="tab-content active">
-  <div class="countdown-card" id="countdown-card">
+  <div class="countdown-card" id="countdown-card" style="position:relative;">
     <div class="goal-label">Mål</div>
     <div class="goal-text" id="home-goal">—</div>
     <div class="days" id="home-days">—</div>
     <div class="days-label">dagar kvar</div>
+    <div id="version-label" style="position:absolute; bottom:8px; right:10px; font-size:0.62rem; color:rgba(255,255,255,0.35);"></div>
   </div>
 
   <div id="weight-home-card" class="card" style="display:none">
@@ -149,8 +150,6 @@
       </div>
     </div>
   </div>
-
-  <div style="text-align:center; font-size:0.7rem; color:var(--dim); margin-bottom:10px;" id="version-label"></div>
 
   <div class="card" id="steps-card" style="display:none">
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
