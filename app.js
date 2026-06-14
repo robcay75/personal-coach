@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v82'
+const APP_VERSION = '2026-06-15 v83'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -329,17 +329,11 @@ function drawWeightHomeCurve(entries, start, target) {
   const lastY = toY(entries[entries.length - 1].weight_kg)
 
   svg.innerHTML = `
-    <defs>
-      <linearGradient id="wg" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="#2563eb"/>
-        <stop offset="100%" stop-color="#4ade80"/>
-      </linearGradient>
-    </defs>
     <line x1="0" y1="${toY(start)}" x2="${W}" y2="${toY(target)}"
       stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
     <line x1="${lastX}" y1="${lastY}" x2="${W}" y2="${toY(target)}"
       stroke="#4ade80" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.6"/>
-    <polyline points="${allPts.join(' ')}" fill="none" stroke="url(#wg)"
+    <polyline points="${allPts.join(' ')}" fill="none" stroke="#2563eb"
       stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     ${dataPts.map((p, i) => {
       const [x, y] = p.split(',')
