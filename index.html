@@ -639,6 +639,21 @@
     <div id="settings-status" class="status"></div>
   </div>
 
+  <div class="card" id="hc-settings-card" style="display:none">
+    <div class="card-title">Datakällor</div>
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 0;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <i data-lucide="footprints" style="width:18px;height:18px;color:var(--muted)"></i>
+        <div>
+          <div style="font-size:0.9rem; font-weight:500;">Google Health Connect</div>
+          <div id="hc-status-label" style="font-size:0.78rem; color:var(--muted); margin-top:2px;">Kontrollerar...</div>
+        </div>
+      </div>
+      <button id="hc-connect-btn" class="btn btn-ghost" style="display:none; font-size:0.8rem; padding:6px 12px;" onclick="requestHealthConnect()">Anslut</button>
+      <i id="hc-connected-icon" data-lucide="check-circle" style="display:none; width:18px;height:18px;color:var(--green)"></i>
+    </div>
+  </div>
+
   <div class="card" style="text-align:center;">
     <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;" id="logged-in-as"></div>
     <button class="btn btn-ghost" onclick="signOut()">Logga ut</button>

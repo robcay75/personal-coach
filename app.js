@@ -122,6 +122,7 @@ async function init() {
   refreshTab('home')
   loadStravaStatus()
   loadWeeklyReports()
+  renderHealthConnectStatus(!!window._hcSteps)
   lucide.createIcons()
   checkWeeklySummary()
 }
@@ -1612,7 +1613,37 @@ function setEditMealStars(n) {
 }
 
 // ── Steps (Health Connect) ────────────────────────────────
-window.onHealthConnectData = function(data) { renderStepsCard(data) }
+window.onHealthConnectData = function(data) {
+  renderStepsCard(data)
+  renderHealthConnectStatus(true)
+}
+
+function renderHealthConnectStatus(connected) {
+  const card = document.getElementById('hc-settings-card')
+  if (!card) return
+  // Only show card when running inside Android wrapper
+  if (typeof window.AndroidBridge === 'undefined') return
+  card.style.display = 'block'
+  const label = document.getElementById('hc-status-label')
+  const btn = document.getElementById('hc-connect-btn')
+  const icon = document.getElementById('hc-connected-icon')
+  if (connected) {
+    label.textContent = 'Ansluten'
+    label.style.color = 'var(--green)'
+    btn.style.display = 'none'
+    icon.style.display = 'inline-block'
+  } else {
+    label.textContent = 'Ej ansluten'
+    label.style.color = 'var(--muted)'
+    btn.style.display = 'inline-block'
+    icon.style.display = 'none'
+  }
+  lucide.createIcons()
+}
+
+function requestHealthConnect() {
+  if (window.AndroidBridge) window.AndroidBridge.requestPermissions()
+}
 
 function renderStepsCard(data) {
   const card = document.getElementById('steps-card')
