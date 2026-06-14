@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v81'
+const APP_VERSION = '2026-06-15 v82'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -305,7 +305,8 @@ async function loadWeightHomeCard() {
 
 function drawWeightHomeCurve(entries, start, target) {
   const svg  = document.getElementById('wh-curve')
-  const W = 300, H = 48, pad = 7
+  const W = svg.clientWidth || 300, H = 48, pad = 7
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`)
   const allW = [start, ...entries.map(e => e.weight_kg), target]
   const minW = Math.min(...allW) - 1
   const maxW = Math.max(...allW) + 1
