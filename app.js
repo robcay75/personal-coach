@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-14 v63'
+const APP_VERSION = '2026-06-14 v68'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
