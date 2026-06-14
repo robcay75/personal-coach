@@ -1622,8 +1622,6 @@ window.onHealthConnectData = function(data) {
 function renderHealthConnectStatus(connected) {
   const card = document.getElementById('hc-settings-card')
   if (!card) return
-  // Only show card when running inside Android wrapper
-  if (typeof window.AndroidBridge === 'undefined') return
   card.style.display = 'block'
   const label = document.getElementById('hc-status-label')
   const btn = document.getElementById('hc-connect-btn')
