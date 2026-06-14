@@ -23,7 +23,7 @@ body::before {
   top: 0; left: 0; right: 0;
   height: var(--sb-height, env(safe-area-inset-top, 0px));
   background: rgba(15, 15, 15, 0.7);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(4px);
   z-index: 9999;
 }
 
