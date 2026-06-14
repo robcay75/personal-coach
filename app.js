@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-14 v60'
+const APP_VERSION = '2026-06-14 v61'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -809,9 +809,9 @@ async function loadWeights() {
     let arrow = ''
     if (prev) {
       const diff = Math.round((w.weight_kg - prev.weight_kg) * 10) / 10
-      if (diff < 0) arrow = `<i data-lucide="trending-down" class="weight-arrow down"></i>`
-      else if (diff > 0) arrow = `<i data-lucide="trending-up" class="weight-arrow up"></i>`
-      else arrow = `<i data-lucide="minus" class="weight-arrow flat"></i>`
+      if (diff < 0) arrow = `<i data-lucide="trending-down" class="weight-arrow down"></i><span class="weight-diff down">${diff} kg</span>`
+      else if (diff > 0) arrow = `<i data-lucide="trending-up" class="weight-arrow up"></i><span class="weight-diff up">+${diff} kg</span>`
+      else arrow = `<i data-lucide="minus" class="weight-arrow flat"></i><span class="weight-diff flat">±0</span>`
     }
     return `
     <div class="item-card">
