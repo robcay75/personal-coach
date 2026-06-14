@@ -1615,10 +1615,21 @@ function setEditMealStars(n) {
 let _currentWeeklySummary = null
 
 async function checkWeeklySummary() {
-  const key = 'lastWeeklySummaryDate'
-  const last = localStorage.getItem(key)
   const todayStr = localDate(new Date())
-  if (!last) { localStorage.setItem(key, todayStr); return }
+  const { data: rows } = await db.from('weekly_summaries')
+    .select('week_end').order('week_end', { ascending: false }).limit(1)
+  const last = rows?.[0]?.week_end ?? null
+  if (!last) {
+    // Ingen sammanställning ännu — spara startpunkt i localStorage som fallback
+    const stored = localStorage.getItem('lastWeeklySummaryDate')
+    if (!stored) { localStorage.setItem('lastWeeklySummaryDate', todayStr); return }
+    const daysSince = Math.round((new Date(todayStr) - new Date(stored)) / 86400000)
+    if (daysSince < 7) return
+    const summary = await generateWeeklySummary(stored, todayStr)
+    _currentWeeklySummary = summary
+    showWeeklySummaryModal(summary)
+    return
+  }
   const daysSince = Math.round((new Date(todayStr) - new Date(last)) / 86400000)
   if (daysSince < 7) return
   const summary = await generateWeeklySummary(last, todayStr)
@@ -1725,14 +1736,17 @@ function showWeeklySummaryModal(s) {
   lucide.createIcons()
 }
 
-function dismissWeeklySummary() {
+async function dismissWeeklySummary() {
   document.getElementById('weekly-summary-modal').style.display = 'none'
   if (!_currentWeeklySummary) return
   const s = _currentWeeklySummary
   localStorage.setItem('lastWeeklySummaryDate', s.toDate)
-  const history = JSON.parse(localStorage.getItem('weeklySummaries') || '[]')
-  history.unshift(s)
-  localStorage.setItem('weeklySummaries', JSON.stringify(history.slice(0, 20)))
+  await db.from('weekly_summaries').upsert({
+    user_id: currentUser.id,
+    week_start: s.fromDate,
+    week_end: s.toDate,
+    data: s
+  }, { onConflict: 'user_id,week_start' })
   loadWeeklyReports()
 }
 
@@ -1754,10 +1768,15 @@ function exportWeeklySummary() {
   document.getElementById('ws-export-status').textContent = '✓ Kopierat!'
 }
 
-function loadWeeklyReports() {
-  const history = JSON.parse(localStorage.getItem('weeklySummaries') || '[]')
+let _weeklyReportsCache = []
+
+async function loadWeeklyReports() {
   const card = document.getElementById('weekly-reports-card')
   const list = document.getElementById('weekly-reports-list')
+  const { data: rows } = await db.from('weekly_summaries')
+    .select('data').order('week_start', { ascending: false })
+  const history = (rows || []).map(r => r.data)
+  _weeklyReportsCache = history
   if (!history.length) { card.style.display = 'none'; return }
   card.style.display = 'block'
   list.innerHTML = history.map((s, i) => {
@@ -1779,10 +1798,10 @@ function loadWeeklyReports() {
 }
 
 function viewWeeklyReport(index) {
-  const history = JSON.parse(localStorage.getItem('weeklySummaries') || '[]')
-  if (!history[index]) return
-  _currentWeeklySummary = history[index]
-  showWeeklySummaryModal(history[index])
+  const s = _weeklyReportsCache[index]
+  if (!s) return
+  _currentWeeklySummary = s
+  showWeeklySummaryModal(s)
 }
 
 // ── Auth ──────────────────────────────────────────────────
