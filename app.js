@@ -1883,6 +1883,7 @@ function showLogin() {
   document.getElementById('app').style.display = 'none'
   const vEl = document.getElementById('login-version')
   if (vEl) vEl.textContent = APP_VERSION
+  if (typeof window.AndroidBridge !== 'undefined') togglePasswordLogin(true)
 }
 
 function showApp() {
@@ -1895,8 +1896,8 @@ function showApp() {
 
 let _passwordLoginMode = false
 
-function togglePasswordLogin() {
-  _passwordLoginMode = !_passwordLoginMode
+function togglePasswordLogin(force) {
+  _passwordLoginMode = force !== undefined ? force : !_passwordLoginMode
   document.getElementById('login-password-row').style.display = _passwordLoginMode ? 'block' : 'none'
   document.getElementById('login-toggle-pw').textContent = _passwordLoginMode ? 'Använd magic link istället' : 'Använd lösenord istället'
 }
