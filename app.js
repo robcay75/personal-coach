@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v80'
+const APP_VERSION = '2026-06-15 v81'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -343,8 +343,7 @@ function drawWeightHomeCurve(entries, start, target) {
     ${dataPts.map((p, i) => {
       const [x, y] = p.split(',')
       const isLast = i === dataPts.length - 1
-      return `<circle cx="${x}" cy="${y}" r="${isLast ? 4 : 2}" fill="${isLast ? '#4ade80' : '#2563eb'}"
-        stroke="${isLast ? '#0f0f0f' : 'none'}" stroke-width="1.5"/>`
+      return `<circle cx="${x}" cy="${y}" r="2" fill="#2563eb"/>`
     }).join('')}
     <circle cx="${W}" cy="${toY(target)}" r="3" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="2,2"/>
   `
