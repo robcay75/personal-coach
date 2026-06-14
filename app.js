@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v84'
+const APP_VERSION = '2026-06-15 v85'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -392,15 +392,15 @@ function showRecovery(lastCheckin, workouts) {
 
   let score = 60
   if (lastCheckin) {
-    if (lastCheckin.sleep_hours >= 8) score += 15
-    else if (lastCheckin.sleep_hours >= 7) score += 8
-    else if (lastCheckin.sleep_hours < 6) score -= 15
-    if (lastCheckin.sleep_quality) score += (lastCheckin.sleep_quality - 3) * 7
-    if (lastCheckin.body_feeling) score += (lastCheckin.body_feeling - 3) * 6
+    if (lastCheckin.sleep_hours >= 8) score += 12
+    else if (lastCheckin.sleep_hours >= 7) score += 6
+    else if (lastCheckin.sleep_hours < 6) score -= 8
+    if (lastCheckin.sleep_quality) score += (lastCheckin.sleep_quality - 3) * 10
+    if (lastCheckin.body_feeling) score += (lastCheckin.body_feeling - 3) * 9
   } else {
     score = 50
   }
-  score -= recentLoad * 8
+  score -= recentLoad * 7
   score = Math.max(0, Math.min(100, score))
 
   // Förklaringstext
