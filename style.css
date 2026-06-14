@@ -68,6 +68,10 @@ body {
 .cb-icon svg { width: 30px; height: 30px; }
 .recovery-ring svg { width: 26px; height: 26px; }
 .item-title svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 3px; }
+.weight-arrow svg { width: 14px; height: 14px; vertical-align: -2px; margin-left: 4px; }
+.weight-arrow.down svg { color: var(--green); }
+.weight-arrow.up svg { color: var(--red); }
+.weight-arrow.flat svg { color: #60a5fa; }
 .item-meta svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 2px; }
 .toggle-group svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 3px; }
 

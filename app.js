@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-14 v59'
+const APP_VERSION = '2026-06-14 v60'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -804,13 +804,23 @@ async function loadWeights() {
     drawWeightChart(data.slice().reverse().slice(-15))
   }
 
-  list.innerHTML = data.map(w => `
+  list.innerHTML = data.map((w, i) => {
+    const prev = data[i + 1]
+    let arrow = ''
+    if (prev) {
+      const diff = Math.round((w.weight_kg - prev.weight_kg) * 10) / 10
+      if (diff < 0) arrow = `<i data-lucide="trending-down" class="weight-arrow down"></i>`
+      else if (diff > 0) arrow = `<i data-lucide="trending-up" class="weight-arrow up"></i>`
+      else arrow = `<i data-lucide="minus" class="weight-arrow flat"></i>`
+    }
+    return `
     <div class="item-card">
       <div class="item-top">
-        <span class="item-title"><i data-lucide="scale"></i> ${w.weight_kg} kg</span>
+        <span class="item-title"><i data-lucide="scale"></i> ${w.weight_kg} kg ${arrow}</span>
         <span class="item-date">${fmtDate(w.date)}</span>
       </div>
-    </div>`).join('')
+    </div>`
+  }).join('')
   lucide.createIcons()
 }
 
