@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-11 v58'
+const APP_VERSION = '2026-06-14 v59'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -655,6 +655,7 @@ async function saveMeal() {
   setMealPortion('M')
   loadMeals()
   updateCalToday()
+  drawDeficitChart()
 }
 
 const _mealCache = {}
@@ -1044,6 +1045,7 @@ async function saveCheckin() {
   if (error) return setStatus('ci-status', 'Fel: ' + error.message, true)
   setStatus('ci-status', 'Sparat!')
   loadCheckins()
+  drawWellbeingChart()
 }
 
 async function loadCheckinForm() {
