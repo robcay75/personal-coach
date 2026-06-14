@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-14 v69'
+const APP_VERSION = '2026-06-14 v70'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1883,7 +1883,6 @@ function showLogin() {
   document.getElementById('app').style.display = 'none'
   const vEl = document.getElementById('login-version')
   if (vEl) vEl.textContent = APP_VERSION
-  if (typeof window.AndroidBridge !== 'undefined') togglePasswordLogin(true)
 }
 
 function showApp() {
