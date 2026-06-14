@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v85'
+const APP_VERSION = '2026-06-15 v86'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -394,7 +394,7 @@ function showRecovery(lastCheckin, workouts) {
   if (lastCheckin) {
     if (lastCheckin.sleep_hours >= 8) score += 12
     else if (lastCheckin.sleep_hours >= 7) score += 6
-    else if (lastCheckin.sleep_hours < 6) score -= 8
+    else if (lastCheckin.sleep_hours > 0 && lastCheckin.sleep_hours < 6) score -= 8
     if (lastCheckin.sleep_quality) score += (lastCheckin.sleep_quality - 3) * 10
     if (lastCheckin.body_feeling) score += (lastCheckin.body_feeling - 3) * 9
   } else {
