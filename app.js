@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v83'
+const APP_VERSION = '2026-06-15 v84'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -403,20 +403,31 @@ function showRecovery(lastCheckin, workouts) {
   score -= recentLoad * 8
   score = Math.max(0, Math.min(100, score))
 
-  let level, icon, msg
-  if (score >= 70) {
-    level = 'good'; icon = 'dumbbell'; msg = `Score ${score} — bra läge att träna hårt`
-  } else if (score >= 45) {
-    level = 'ok'; icon = 'activity'; msg = `Score ${score} — lyssna på kroppen`
+  // Förklaringstext
+  const parts = []
+  if (!lastCheckin) {
+    parts.push('ingen incheckning idag')
   } else {
-    level = 'rest'; icon = 'bed'; msg = `Score ${score} — prioritera vila idag`
+    if (lastCheckin.sleep_hours) parts.push(`sömn ${lastCheckin.sleep_hours}h`)
+    if (lastCheckin.sleep_quality) parts.push(`sömnkvalitet ${lastCheckin.sleep_quality}/5`)
+    if (lastCheckin.body_feeling) parts.push(`kropp ${lastCheckin.body_feeling}/5`)
+  }
+  if (recentLoad > 0) parts.push(`${recentLoad} pass senaste 3 dagarna`)
+
+  let level, icon
+  if (score >= 70) {
+    level = 'good'; icon = 'dumbbell'
+  } else if (score >= 45) {
+    level = 'ok'; icon = 'activity'
+  } else {
+    level = 'rest'; icon = 'bed'
   }
 
   card.className = `recovery-card ${level}`
   ring.className = `recovery-ring ${level}`
   ring.innerHTML = `<i data-lucide="${icon}"></i>`
-  title.textContent = level === 'good' ? 'Återhämtad' : level === 'ok' ? 'Halvtaskig' : 'Behöver vila'
-  sub.textContent = msg
+  title.textContent = level === 'good' ? 'Återhämtad' : level === 'ok' ? 'Okej form' : 'Behöver vila'
+  sub.textContent = `Score ${score}` + (parts.length ? ` · ${parts.join(' · ')}` : '')
 }
 
 function setPill(cardId, labelId, done, doneText, defaultText) {
