@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-14 v61'
+const APP_VERSION = '2026-06-14 v62'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1625,14 +1625,41 @@ function showApp() {
   init()
 }
 
-async function sendMagicLink() {
+let _passwordLoginMode = false
+
+function togglePasswordLogin() {
+  _passwordLoginMode = !_passwordLoginMode
+  document.getElementById('login-password-row').style.display = _passwordLoginMode ? 'block' : 'none'
+  document.getElementById('login-toggle-pw').textContent = _passwordLoginMode ? 'Använd magic link istället' : 'Använd lösenord istället'
+}
+
+async function handleLogin() {
   const email = document.getElementById('login-email').value.trim()
   const statusEl = document.getElementById('login-status')
   if (!email) { statusEl.textContent = 'Ange en e-postadress.'; return }
-  statusEl.textContent = 'Skickar...'
-  const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } })
+
+  if (_passwordLoginMode) {
+    const password = document.getElementById('login-password').value
+    if (!password) { statusEl.textContent = 'Ange lösenord.'; return }
+    statusEl.textContent = 'Loggar in...'
+    const { error } = await db.auth.signInWithPassword({ email, password })
+    if (error) { statusEl.textContent = 'Fel: ' + error.message; return }
+  } else {
+    statusEl.textContent = 'Skickar...'
+    const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } })
+    if (error) { statusEl.textContent = 'Fel: ' + error.message; return }
+    statusEl.textContent = '✓ Kolla din inbox! Klicka på länken i mejlet.'
+  }
+}
+
+async function setNewPassword() {
+  const password = document.getElementById('new-password').value
+  const statusEl = document.getElementById('set-password-status')
+  if (password.length < 6) { statusEl.textContent = 'Minst 6 tecken.'; return }
+  const { error } = await db.auth.updateUser({ password })
   if (error) { statusEl.textContent = 'Fel: ' + error.message; return }
-  statusEl.textContent = '✓ Kolla din inbox! Klicka på länken i mejlet.'
+  statusEl.textContent = '✓ Lösenord sparat!'
+  setTimeout(showApp, 1000)
 }
 
 async function signOut() {
@@ -1644,8 +1671,15 @@ async function startApp() {
 
   db.auth.onAuthStateChange((event, session) => {
     currentUser = session?.user ?? null
-    if (currentUser) showApp()
-    else showLogin()
+    if (event === 'PASSWORD_RECOVERY') {
+      document.getElementById('login-screen').style.display = 'none'
+      document.getElementById('app').style.display = 'none'
+      document.getElementById('set-password-screen').style.display = 'flex'
+    } else if (currentUser) {
+      showApp()
+    } else {
+      showLogin()
+    }
   })
 
   try { await db.auth.getSession() } catch(e) {}
