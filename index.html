@@ -152,6 +152,34 @@
 
   <div style="text-align:center; font-size:0.7rem; color:var(--dim); margin-bottom:10px;" id="version-label"></div>
 
+  <div class="card" id="steps-card" style="display:none">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+      <i data-lucide="footprints" style="width:16px;height:16px;color:var(--muted)"></i>
+      <span style="font-size:0.82rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em;">Steg idag</span>
+    </div>
+    <div class="steps-main">
+      <div class="steps-ring-wrap">
+        <svg class="steps-ring-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="var(--surface2)" stroke-width="8"/>
+          <circle id="steps-ring-progress" cx="50" cy="50" r="42" fill="none" stroke="var(--green)" stroke-width="8"
+            stroke-dasharray="264" stroke-dashoffset="264"
+            transform="rotate(-90 50 50)" stroke-linecap="round"/>
+        </svg>
+        <div class="steps-ring-text">
+          <div id="steps-today-count">—</div>
+          <div class="steps-goal-label">/ 10 000</div>
+        </div>
+      </div>
+      <div class="steps-side">
+        <div id="steps-pct-label" class="steps-pct"></div>
+        <div class="steps-bar-track"><div id="steps-bar-fill" class="steps-bar-fill"></div></div>
+        <div class="steps-meta-label">Veckosnitt</div>
+        <div id="steps-avg" class="steps-avg-val">—</div>
+      </div>
+    </div>
+    <div class="steps-week-bars" id="steps-week-bars"></div>
+  </div>
+
   <div class="card" id="weekly-reports-card" style="display:none">
     <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
       <span>Veckorapporter</span>

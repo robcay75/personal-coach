@@ -1611,6 +1611,49 @@ function setEditMealStars(n) {
   document.getElementById('em-health-stars')._manualEdit = true
 }
 
+// ── Steps (Health Connect) ────────────────────────────────
+window.onHealthConnectData = function(data) { renderStepsCard(data) }
+
+function renderStepsCard(data) {
+  const card = document.getElementById('steps-card')
+  if (!card) return
+  card.style.display = 'block'
+
+  const today = data.today || 0
+  const goal = 10000
+  const pct = Math.min(100, Math.round(today / goal * 100))
+  const offset = 264 - (pct / 100) * 264
+
+  document.getElementById('steps-today-count').textContent = today.toLocaleString('sv-SE')
+  document.getElementById('steps-pct-label').textContent = pct + '% av målet'
+  document.getElementById('steps-bar-fill').style.width = pct + '%'
+  document.getElementById('steps-ring-progress').setAttribute('stroke-dashoffset', offset)
+
+  const weekData = data.week || {}
+  const weekValues = Object.values(weekData)
+  const avg = weekValues.length ? Math.round(weekValues.reduce((s, v) => s + v, 0) / weekValues.length) : 0
+  document.getElementById('steps-avg').textContent = avg.toLocaleString('sv-SE')
+
+  const days = ['Mån','Tis','Ons','Tor','Fre','Lör','Sön']
+  const todayStr = localDate(new Date())
+  const dates = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i); dates.push(localDate(d))
+  }
+  const maxVal = Math.max(...dates.map(d => weekData[d] || 0), 1)
+  document.getElementById('steps-week-bars').innerHTML = dates.map(dateStr => {
+    const steps = weekData[dateStr] || 0
+    const h = Math.max(4, Math.round((steps / maxVal) * 36))
+    const d = new Date(dateStr + 'T12:00:00')
+    const dayName = days[d.getDay() === 0 ? 6 : d.getDay() - 1]
+    const isToday = dateStr === todayStr
+    return `<div class="steps-week-bar${isToday ? ' today' : ''}">
+      <div class="steps-week-bar-fill" style="height:${h}px"></div>
+      <span class="steps-week-bar-label">${dayName}</span>
+    </div>`
+  }).join('')
+}
+
 // ── Weekly Summary ────────────────────────────────────────
 let _currentWeeklySummary = null
 
