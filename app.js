@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-14 v70'
+const APP_VERSION = '2026-06-14 v71'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1641,7 +1641,11 @@ function renderHealthConnectStatus(connected) {
 }
 
 function requestHealthConnect() {
-  if (window.AndroidBridge) window.AndroidBridge.requestPermissions()
+  if (window.AndroidBridge) {
+    window.AndroidBridge.requestPermissions()
+  } else {
+    alert('AndroidBridge saknas. typeof=' + typeof window.AndroidBridge)
+  }
 }
 
 function renderStepsCard(data) {
