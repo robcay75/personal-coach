@@ -21,7 +21,7 @@ body::before {
   content: '';
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: env(safe-area-inset-top, 0px);
+  height: var(--sb-height, env(safe-area-inset-top, 0px));
   background: var(--bg);
   z-index: 9999;
 }
@@ -34,7 +34,7 @@ body {
 }
 
 /* ── Layout ── */
-.tab-content { display: none; padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(var(--nav-height) + 24px); max-width: 540px; margin: 0 auto; }
+.tab-content { display: none; padding: calc(20px + var(--sb-height, env(safe-area-inset-top, 0px))) 16px calc(var(--nav-height) + 24px); max-width: 540px; margin: 0 auto; }
 .tab-content.active { display: block; }
 
 /* ── Bottom nav ── */
