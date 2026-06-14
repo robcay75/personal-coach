@@ -601,3 +601,35 @@ svg.chart {
   background: var(--border);
   margin: 14px 0;
 }
+
+/* ── Weekly summary ── */
+.ws-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.ws-card {
+  background: var(--surface2);
+  border-radius: 14px;
+  padding: 14px;
+}
+.ws-card-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+.ws-card-label svg { width: 12px; height: 12px; }
+.ws-card-val { font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+.ws-card-sub { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+.ws-card-diff { font-size: 0.82rem; font-weight: 600; margin-top: 2px; }
+.ws-highlight {
+  background: var(--surface2);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.weekly-report-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.weekly-report-item:last-child { border-bottom: none; }
+.weekly-report-item:hover .wri-label { color: var(--accent); }

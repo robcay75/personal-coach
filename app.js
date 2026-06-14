@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-14 v62'
+const APP_VERSION = '2026-06-14 v63'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -121,7 +121,9 @@ async function init() {
   await Promise.all([loadProfile(), loadSettings()])
   refreshTab('home')
   loadStravaStatus()
+  loadWeeklyReports()
   lucide.createIcons()
+  checkWeeklySummary()
 }
 
 function setDateDefaults() {
@@ -1607,6 +1609,180 @@ function setEditMealStars(n) {
   _editMealStars = n
   updateStars('em-health-stars', n)
   document.getElementById('em-health-stars')._manualEdit = true
+}
+
+// ── Weekly Summary ────────────────────────────────────────
+let _currentWeeklySummary = null
+
+async function checkWeeklySummary() {
+  const key = 'lastWeeklySummaryDate'
+  const last = localStorage.getItem(key)
+  const todayStr = localDate(new Date())
+  if (!last) { localStorage.setItem(key, todayStr); return }
+  const daysSince = Math.round((new Date(todayStr) - new Date(last)) / 86400000)
+  if (daysSince < 7) return
+  const summary = await generateWeeklySummary(last, todayStr)
+  _currentWeeklySummary = summary
+  showWeeklySummaryModal(summary)
+}
+
+async function generateWeeklySummary(fromDate, toDate) {
+  const [wRes, mRes, cRes, wtRes] = await Promise.all([
+    db.from('workouts').select('*').gte('date', fromDate).lt('date', toDate),
+    db.from('meals').select('date,calories').gte('date', fromDate).lt('date', toDate),
+    db.from('checkins').select('date,sleep_hours,sleep_quality').gte('date', fromDate).lt('date', toDate),
+    db.from('weight_logs').select('date,weight_kg').gte('date', fromDate).lt('date', toDate).order('date')
+  ])
+  const workouts = wRes.data || []
+  const meals = mRes.data || []
+  const checkins = cRes.data || []
+  const weights = wtRes.data || []
+
+  // Vikt
+  const weightStart = weights[0]?.weight_kg ?? null
+  const weightEnd = weights[weights.length - 1]?.weight_kg ?? null
+  const weightDiff = (weightStart && weightEnd) ? Math.round((weightEnd - weightStart) * 10) / 10 : null
+
+  // Träning
+  const realWorkouts = workouts.filter(w => !w.type.startsWith('pendling'))
+  const commuteWorkouts = workouts.filter(w => w.type.startsWith('pendling'))
+  const totalMin = realWorkouts.reduce((s, w) => s + (w.duration_minutes || 0), 0)
+  const totalKm = [...realWorkouts, ...commuteWorkouts].reduce((s, w) => s + (w.distance_km || 0), 0)
+  const commuteKm = commuteWorkouts.reduce((s, w) => s + (w.distance_km || 0), 0)
+
+  // Mat
+  const mealDays = [...new Set(meals.map(m => m.date))]
+  const totalCal = meals.reduce((s, m) => s + (m.calories || 0), 0)
+  const avgCal = mealDays.length ? Math.round(totalCal / mealDays.length) : null
+
+  // Sömn
+  const sleepEntries = checkins.filter(c => c.sleep_hours > 0)
+  const avgSleep = sleepEntries.length ? Math.round(sleepEntries.reduce((s, c) => s + c.sleep_hours, 0) / sleepEntries.length * 10) / 10 : null
+  const avgQuality = sleepEntries.filter(c => c.sleep_quality).length
+    ? Math.round(sleepEntries.filter(c => c.sleep_quality).reduce((s, c) => s + c.sleep_quality, 0) / sleepEntries.filter(c => c.sleep_quality).length * 10) / 10 : null
+
+  // Kul detalj
+  const highlights = []
+  if (commuteKm > 0) highlights.push(`Du pendlade ${Math.round(commuteKm * 10) / 10} km den här veckan 🚴`)
+  if (sleepEntries.length) {
+    const best = sleepEntries.reduce((a, b) => a.sleep_hours > b.sleep_hours ? a : b)
+    highlights.push(`Din bästa natt var ${best.sleep_hours}h sömn 😴`)
+  }
+  if (realWorkouts.length >= 4) highlights.push(`Starkt jobbat — ${realWorkouts.length} pass på en vecka! 💪`)
+  if (weightDiff !== null && weightDiff < 0) highlights.push(`Du gick ner ${Math.abs(weightDiff)} kg den här veckan ⬇️`)
+  if (mealDays.length >= 6) highlights.push(`Du loggade mat ${mealDays.length} av 7 dagar 🍽️`)
+  const highlight = highlights[Math.floor(Math.random() * highlights.length)] || null
+
+  // Veckoetikett
+  const d1 = new Date(fromDate + 'T00:00:00')
+  const d2 = new Date(toDate + 'T00:00:00')
+  d2.setDate(d2.getDate() - 1)
+  const fmt = d => d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })
+  const weekLabel = `${fmt(d1)} – ${fmt(d2)}`
+
+  return { fromDate, toDate, weekLabel, weightStart, weightEnd, weightDiff, workoutCount: realWorkouts.length, totalMin, totalKm: Math.round(totalKm * 10) / 10, avgCal, mealDaysLogged: mealDays.length, avgSleep, avgQuality, highlight }
+}
+
+function showWeeklySummaryModal(s) {
+  const fmt = n => n != null ? n : '—'
+  const diffColor = s.weightDiff < 0 ? 'var(--green)' : s.weightDiff > 0 ? 'var(--red)' : 'var(--muted)'
+  const diffSign = s.weightDiff > 0 ? '+' : ''
+
+  document.getElementById('ws-week-label').textContent = s.weekLabel
+  document.getElementById('ws-title').textContent = 'Veckorapport'
+
+  const h = n => Math.floor(n / 60) + 'h ' + (n % 60) + 'min'
+
+  document.getElementById('ws-grid').innerHTML = `
+    <div class="ws-card">
+      <div class="ws-card-label"><i data-lucide="scale"></i> Vikt</div>
+      <div class="ws-card-val">${s.weightEnd != null ? s.weightEnd + ' kg' : '—'}</div>
+      ${s.weightDiff != null ? `<div class="ws-card-diff" style="color:${diffColor}">${diffSign}${s.weightDiff} kg</div>` : '<div class="ws-card-sub">Ej loggad</div>'}
+      ${s.weightStart != null ? `<div class="ws-card-sub">${s.weightStart} → ${s.weightEnd} kg</div>` : ''}
+    </div>
+    <div class="ws-card">
+      <div class="ws-card-label"><i data-lucide="dumbbell"></i> Träning</div>
+      <div class="ws-card-val">${s.workoutCount} pass</div>
+      <div class="ws-card-sub">${s.totalMin > 0 ? h(s.totalMin) : '—'}${s.totalKm > 0 ? ' · ' + s.totalKm + ' km' : ''}</div>
+    </div>
+    <div class="ws-card">
+      <div class="ws-card-label"><i data-lucide="utensils"></i> Mat</div>
+      <div class="ws-card-val">${s.avgCal != null ? s.avgCal + ' kcal' : '—'}</div>
+      <div class="ws-card-sub">${s.avgCal != null ? 'snitt/dag · ' + s.mealDaysLogged + ' dagar' : 'Ej loggad'}</div>
+    </div>
+    <div class="ws-card">
+      <div class="ws-card-label"><i data-lucide="moon"></i> Sömn</div>
+      <div class="ws-card-val">${s.avgSleep != null ? s.avgSleep + 'h' : '—'}</div>
+      <div class="ws-card-sub">${s.avgQuality != null ? '⭐ ' + s.avgQuality + '/5 snitt' : 'Ej loggad'}</div>
+    </div>`
+
+  const hlEl = document.getElementById('ws-highlight')
+  if (s.highlight) { hlEl.textContent = s.highlight; hlEl.style.display = 'block' }
+  else hlEl.style.display = 'none'
+
+  document.getElementById('ws-export-status').textContent = ''
+  document.getElementById('weekly-summary-modal').style.display = 'block'
+  lucide.createIcons()
+}
+
+function dismissWeeklySummary() {
+  document.getElementById('weekly-summary-modal').style.display = 'none'
+  if (!_currentWeeklySummary) return
+  const s = _currentWeeklySummary
+  localStorage.setItem('lastWeeklySummaryDate', s.toDate)
+  const history = JSON.parse(localStorage.getItem('weeklySummaries') || '[]')
+  history.unshift(s)
+  localStorage.setItem('weeklySummaries', JSON.stringify(history.slice(0, 20)))
+  loadWeeklyReports()
+}
+
+function exportWeeklySummary() {
+  const s = _currentWeeklySummary
+  if (!s) return
+  const h = n => Math.floor(n / 60) + 'h ' + (n % 60) + 'min'
+  const sign = s.weightDiff > 0 ? '+' : ''
+  const lines = [
+    `Veckorapport ${s.weekLabel}`,
+    '',
+    s.weightEnd != null ? `⚖️ Vikt: ${s.weightStart} → ${s.weightEnd} kg (${sign}${s.weightDiff} kg)` : '⚖️ Vikt: ej loggad',
+    s.workoutCount > 0 ? `🏋️ Träning: ${s.workoutCount} pass · ${h(s.totalMin)}${s.totalKm > 0 ? ' · ' + s.totalKm + ' km' : ''}` : '🏋️ Träning: inga pass',
+    s.avgCal != null ? `🍽️ Mat: ${s.avgCal} kcal/dag snitt (${s.mealDaysLogged} dagar loggade)` : '🍽️ Mat: ej loggad',
+    s.avgSleep != null ? `😴 Sömn: ${s.avgSleep}h snitt${s.avgQuality ? ' · ⭐ ' + s.avgQuality + '/5' : ''}` : '😴 Sömn: ej loggad',
+    s.highlight ? `\n✨ ${s.highlight}` : ''
+  ].filter(l => l !== undefined)
+  navigator.clipboard.writeText(lines.join('\n'))
+  document.getElementById('ws-export-status').textContent = '✓ Kopierat!'
+}
+
+function loadWeeklyReports() {
+  const history = JSON.parse(localStorage.getItem('weeklySummaries') || '[]')
+  const card = document.getElementById('weekly-reports-card')
+  const list = document.getElementById('weekly-reports-list')
+  if (!history.length) { card.style.display = 'none'; return }
+  card.style.display = 'block'
+  list.innerHTML = history.map((s, i) => {
+    const sign = s.weightDiff > 0 ? '+' : ''
+    const meta = [
+      s.workoutCount ? s.workoutCount + ' pass' : null,
+      s.avgCal ? s.avgCal + ' kcal/dag' : null,
+      s.weightDiff != null ? sign + s.weightDiff + ' kg' : null
+    ].filter(Boolean).join(' · ')
+    return `<div class="weekly-report-item" onclick="viewWeeklyReport(${i})">
+      <div>
+        <div class="wri-label" style="font-weight:600; font-size:0.9rem;">${s.weekLabel}</div>
+        <div style="font-size:0.78rem; color:var(--muted); margin-top:2px;">${meta || '—'}</div>
+      </div>
+      <i data-lucide="chevron-right" style="width:16px;height:16px;color:var(--dim);"></i>
+    </div>`
+  }).join('')
+  lucide.createIcons()
+}
+
+function viewWeeklyReport(index) {
+  const history = JSON.parse(localStorage.getItem('weeklySummaries') || '[]')
+  if (!history[index]) return
+  _currentWeeklySummary = history[index]
+  showWeeklySummaryModal(history[index])
 }
 
 // ── Auth ──────────────────────────────────────────────────
