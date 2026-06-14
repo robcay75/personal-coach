@@ -122,6 +122,7 @@ async function init() {
   refreshTab('home')
   loadStravaStatus()
   loadWeeklyReports()
+  if (window._hcSteps) renderStepsCard(window._hcSteps)
   renderHealthConnectStatus(!!window._hcSteps)
   lucide.createIcons()
   checkWeeklySummary()
