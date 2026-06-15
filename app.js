@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v87'
+const APP_VERSION = '2026-06-15 v88'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -581,15 +581,21 @@ async function loadWorkouts() {
   if (!data?.length) { list.innerHTML = '<div class="empty">Inga pass loggade ännu.</div>'; return }
   const icons = { simning: 'waves', löpning: 'footprints', cykling: 'bike', gym: 'dumbbell', annat: 'zap', 'pendling-cykling': 'bike', 'pendling-promenad': 'footprints' }
   data.forEach(w => { _workoutCache[w.id] = w })
-  list.innerHTML = data.map(w => `
+  list.innerHTML = data.map(w => {
+    const fromStrava = !!w.strava_activity_id
+    return `
     <div class="item-card" style="cursor:pointer;" onclick="openEditWorkout('${w.id}')">
       <div class="item-top">
         <span class="item-title"><i data-lucide="${icons[w.type] || 'zap'}"></i> ${capitalize(w.type)}</span>
-        <span class="item-date">${fmtDate(w.date)}</span>
+        <span style="display:flex;align-items:center;gap:6px;">
+          ${fromStrava ? `<span style="font-size:0.68rem;color:var(--dim);letter-spacing:.02em;">Strava</span>` : ''}
+          <span class="item-date">${fmtDate(w.date)}</span>
+        </span>
       </div>
       <div class="item-meta">${w.duration_minutes} min${w.distance_km ? ' · ' + w.distance_km + ' km' : ''}${w.calories ? ' · ' + w.calories + ' kcal' : ''}</div>
       ${w.notes ? `<div class="item-note">${w.notes}</div>` : ''}
-    </div>`).join('')
+    </div>`
+  }).join('')
   lucide.createIcons()
 }
 
@@ -598,6 +604,13 @@ let _editWorkoutId = null
 function openEditWorkout(id) {
   const w = _workoutCache[id]
   if (!w) return
+
+  if (w.strava_activity_id) {
+    setStatus('workout-status', 'Detta pass är loggat via Strava — redigera det där.', false)
+    setTimeout(() => setStatus('workout-status', ''), 3000)
+    return
+  }
+
   _editWorkoutId = id
   document.getElementById('ew-type').value     = w.type || 'annat'
   document.getElementById('ew-date').value     = w.date || today
