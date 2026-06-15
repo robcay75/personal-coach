@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v91'
+const APP_VERSION = '2026-06-15 v92'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1591,7 +1591,7 @@ async function syncFromStrava() {
     user_id: currentUser.id,
     type: mapStravaType(a.sport_type || a.type),
     date: a.start_date_local.split('T')[0],
-    duration_minutes: Math.round(a.elapsed_time / 60),
+    duration_minutes: Math.round(Math.min(a.moving_time || a.elapsed_time, a.elapsed_time) / 60),
     distance_km: a.distance ? Math.round(a.distance / 100) / 10 : null,
     calories: a.calories > 0 ? a.calories : a.kilojoules > 0 ? Math.round(a.kilojoules * 0.239) : null,
     strava_activity_id: a.id,
