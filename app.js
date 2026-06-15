@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v86'
+const APP_VERSION = '2026-06-15 v87'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1675,10 +1675,12 @@ function renderStepsCard(data) {
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i); dates.push(localDate(d))
   }
-  const maxVal = Math.max(...dates.map(d => weekData[d] || 0), 1)
-  document.getElementById('steps-week-bars').innerHTML = dates.map(dateStr => {
+  const BAR_H = 36
+  const maxVal = Math.max(...dates.map(d => weekData[d] || 0), goal, 1)
+  const goalLineBottom = Math.round((goal / maxVal) * BAR_H)
+  const bars = dates.map(dateStr => {
     const steps = weekData[dateStr] || 0
-    const h = Math.max(4, Math.round((steps / maxVal) * 36))
+    const h = Math.max(4, Math.round((steps / maxVal) * BAR_H))
     const d = new Date(dateStr + 'T12:00:00')
     const dayName = days[d.getDay() === 0 ? 6 : d.getDay() - 1]
     const isToday = dateStr === todayStr
@@ -1687,6 +1689,10 @@ function renderStepsCard(data) {
       <span class="steps-week-bar-label">${dayName}</span>
     </div>`
   }).join('')
+  const goalLine = `<div style="position:absolute;left:0;right:0;bottom:calc(${goalLineBottom}px + 1.1rem);border-top:1px dashed rgba(255,255,255,0.18);pointer-events:none;"></div>`
+  const container = document.getElementById('steps-week-bars')
+  container.style.position = 'relative'
+  container.innerHTML = goalLine + bars
 }
 
 // ── Weekly Summary ────────────────────────────────────────
