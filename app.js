@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v92'
+const APP_VERSION = '2026-06-15 v93'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -574,7 +574,7 @@ async function saveWorkout() {
 }
 
 const _workoutCache = {}
-const STRAVA_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" style="opacity:0.5;flex-shrink:0;"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" fill="#FC4C02"/></svg>`
+const stravaIcon = id => `<a href="https://www.strava.com/activities/${id}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:flex;align-items:center;opacity:0.5;" title="Öppna i Strava"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" fill="#FC4C02"/></svg></a>`
 
 function weekKey(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -652,7 +652,7 @@ async function loadWorkouts() {
       <div class="item-top">
         <span class="item-title"><i data-lucide="${icons[w.type] || 'zap'}"></i> ${capitalize(w.type)}</span>
         <span style="display:flex;align-items:center;gap:6px;">
-          ${fromStrava ? STRAVA_SVG : ''}
+          ${fromStrava ? stravaIcon(w.strava_activity_id) : ''}
           <span class="item-date">${fmtDate(w.date)}</span>
         </span>
       </div>
