@@ -617,7 +617,7 @@ svg.chart {
 .steps-ring-wrap { position: relative; width: 88px; height: 88px; flex-shrink: 0; }
 .steps-ring-svg { width: 88px; height: 88px; }
 .steps-ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.steps-ring-text > div:first-child { font-size: 1.25rem; font-weight: 600; line-height: 1; }
+.steps-ring-text > div:first-child { font-size: 1rem; font-weight: 600; line-height: 1; }
 .steps-goal-label { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
 .steps-side { flex: 1; }
 .steps-pct { font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
@@ -625,12 +625,13 @@ svg.chart {
 .steps-bar-fill { background: var(--green); height: 100%; border-radius: 4px; transition: width 0.6s ease; width: 0%; }
 .steps-meta-label { font-size: 0.75rem; color: var(--muted); }
 .steps-avg-val { font-size: 1.1rem; font-weight: 600; }
-.steps-week-bars { display: flex; align-items: flex-end; gap: 4px; height: 56px; padding-top: 12px; }
-.steps-week-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
-.steps-week-bar-fill { width: 100%; border-radius: 3px 3px 0 0; background: var(--surface2); min-height: 4px; }
-.steps-week-bar.today .steps-week-bar-fill { background: var(--green); }
-.steps-week-bar-label { font-size: 0.65rem; color: var(--muted); }
-.steps-week-bar.today .steps-week-bar-label { color: var(--green); font-weight: 600; }
+.steps-week-bars { display: flex; flex-direction: column; gap: 6px; }
+.steps-bars-area { position: relative; display: flex; align-items: flex-end; gap: 4px; height: 36px; }
+.steps-bars-labels { display: flex; gap: 4px; }
+.steps-week-bar-fill { flex: 1; border-radius: 3px 3px 0 0; background: var(--surface2); min-height: 4px; }
+.steps-week-bar-fill.today { background: var(--green); }
+.steps-week-bar-label { flex: 1; font-size: 0.65rem; color: var(--muted); text-align: center; }
+.steps-week-bar-label.today { color: var(--green); font-weight: 600; }
 
 /* ── Weekly summary ── */
 .ws-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }

@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v95'
+const APP_VERSION = '2026-06-15 v96'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1834,22 +1834,23 @@ function renderStepsCard(data) {
   }
   const BAR_H = 36
   const maxVal = Math.max(...dates.map(d => weekData[d] || 0), goal, 1)
-  const goalLineBottom = Math.round((goal / maxVal) * BAR_H)
-  const bars = dates.map(dateStr => {
+  const goalPct = Math.round((goal / maxVal) * 100)
+  const fillsHtml = dates.map(dateStr => {
     const steps = weekData[dateStr] || 0
     const h = Math.max(4, Math.round((steps / maxVal) * BAR_H))
+    const isToday = dateStr === todayStr
+    return `<div class="steps-week-bar-fill${isToday ? ' today' : ''}" style="height:${h}px"></div>`
+  }).join('')
+  const labelsHtml = dates.map(dateStr => {
     const d = new Date(dateStr + 'T12:00:00')
     const dayName = days[d.getDay() === 0 ? 6 : d.getDay() - 1]
     const isToday = dateStr === todayStr
-    return `<div class="steps-week-bar${isToday ? ' today' : ''}">
-      <div class="steps-week-bar-fill" style="height:${h}px"></div>
-      <span class="steps-week-bar-label">${dayName}</span>
-    </div>`
+    return `<span class="steps-week-bar-label${isToday ? ' today' : ''}">${dayName}</span>`
   }).join('')
-  const goalLine = `<div style="position:absolute;left:0;right:0;bottom:calc(${goalLineBottom}px + 14px);border-top:1px dashed rgba(255,255,255,0.18);pointer-events:none;"></div>`
-  const container = document.getElementById('steps-week-bars')
-  container.style.position = 'relative'
-  container.innerHTML = goalLine + bars
+  const goalLine = `<div style="position:absolute;left:0;right:0;bottom:${goalPct}%;border-top:1px dashed rgba(255,255,255,0.18);pointer-events:none;"></div>`
+  document.getElementById('steps-week-bars').innerHTML =
+    `<div class="steps-bars-area">${goalLine}${fillsHtml}</div>` +
+    `<div class="steps-bars-labels">${labelsHtml}</div>`
 }
 
 // ── Weekly Summary ────────────────────────────────────────
