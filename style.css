@@ -625,7 +625,7 @@ svg.chart {
 .steps-bar-fill { background: var(--green); height: 100%; border-radius: 4px; transition: width 0.6s ease; width: 0%; }
 .steps-meta-label { font-size: 0.75rem; color: var(--muted); }
 .steps-avg-val { font-size: 1.1rem; font-weight: 600; }
-.steps-week-bars { display: flex; align-items: flex-end; gap: 4px; height: 56px; border-top: 1px solid var(--border); padding-top: 12px; }
+.steps-week-bars { display: flex; align-items: flex-end; gap: 4px; height: 56px; padding-top: 12px; }
 .steps-week-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
 .steps-week-bar-fill { width: 100%; border-radius: 3px 3px 0 0; background: var(--surface2); min-height: 4px; }
 .steps-week-bar.today .steps-week-bar-fill { background: var(--green); }

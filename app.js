@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v94'
+const APP_VERSION = '2026-06-15 v95'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1846,7 +1846,7 @@ function renderStepsCard(data) {
       <span class="steps-week-bar-label">${dayName}</span>
     </div>`
   }).join('')
-  const goalLine = `<div style="position:absolute;left:0;right:0;bottom:calc(${goalLineBottom}px + 1.1rem);border-top:1px dashed rgba(255,255,255,0.18);pointer-events:none;"></div>`
+  const goalLine = `<div style="position:absolute;left:0;right:0;bottom:calc(${goalLineBottom}px + 14px);border-top:1px dashed rgba(255,255,255,0.18);pointer-events:none;"></div>`
   const container = document.getElementById('steps-week-bars')
   container.style.position = 'relative'
   container.innerHTML = goalLine + bars
