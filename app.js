@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v89'
+const APP_VERSION = '2026-06-15 v90'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -622,6 +622,7 @@ function openEditWorkout(id) {
 
 function closeEditWorkout() {
   document.getElementById('edit-workout-overlay').classList.remove('open')
+  document.getElementById('ew-delete-confirm').style.display = 'none'
   _editWorkoutId = null
 }
 
@@ -644,7 +645,6 @@ async function saveEditWorkout() {
 
 async function deleteWorkout() {
   if (!_editWorkoutId) return
-  if (!confirm('Radera detta träningspass?')) return
   const { error } = await db.from('workouts').delete().eq('id', _editWorkoutId)
   if (error) { alert('Kunde inte radera: ' + error.message); return }
   closeEditWorkout()
@@ -1629,6 +1629,7 @@ function openEditMeal(id, desc, calories, health_score) {
 
 function closeEditMeal() {
   document.getElementById('edit-meal-overlay').classList.remove('open')
+  document.getElementById('em-delete-confirm').style.display = 'none'
   _editMealId = null
 }
 
@@ -1685,7 +1686,6 @@ async function saveEditMeal() {
 
 async function deleteMeal() {
   if (!_editMealId) return
-  if (!confirm('Radera denna måltid?')) return
   const { error } = await db.from('meals').delete().eq('id', _editMealId)
   if (error) { alert('Kunde inte radera: ' + error.message); return }
   closeEditMeal()

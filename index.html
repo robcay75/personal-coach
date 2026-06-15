@@ -724,7 +724,14 @@
       <button type="button" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;font-weight:600;padding:12px;cursor:pointer;font-family:inherit;" onclick="closeEditMeal()">Avbryt</button>
       <button type="button" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:0.95rem;font-weight:600;padding:12px;cursor:pointer;font-family:inherit;" onclick="saveEditMeal()">Spara</button>
     </div>
-    <button type="button" style="width:100%;margin-top:8px;background:none;border:none;color:var(--red);font-size:0.88rem;cursor:pointer;padding:8px;font-family:inherit;" onclick="deleteMeal()">🗑 Radera måltid</button>
+    <div id="em-delete-confirm" style="display:none;margin-top:8px;background:var(--surface2);border-radius:10px;padding:12px;text-align:center;">
+      <div style="font-size:0.88rem;color:var(--muted);margin-bottom:10px;">Radera denna måltid?</div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" style="flex:1;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px;cursor:pointer;font-family:inherit;font-size:0.88rem;" onclick="document.getElementById('em-delete-confirm').style.display='none'">Avbryt</button>
+        <button type="button" style="flex:1;background:var(--red);border:none;border-radius:8px;color:#fff;padding:8px;cursor:pointer;font-family:inherit;font-size:0.88rem;font-weight:600;" onclick="deleteMeal()">Radera</button>
+      </div>
+    </div>
+    <button type="button" style="width:100%;margin-top:8px;background:none;border:none;color:var(--red);font-size:0.88rem;cursor:pointer;padding:8px;font-family:inherit;" onclick="document.getElementById('em-delete-confirm').style.display='block'">🗑 Radera måltid</button>
   </div>
 </div>
 
@@ -772,7 +779,14 @@
       <button type="button" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;font-weight:600;padding:12px;cursor:pointer;font-family:inherit;" onclick="closeEditWorkout()">Avbryt</button>
       <button type="button" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:0.95rem;font-weight:600;padding:12px;cursor:pointer;font-family:inherit;" onclick="saveEditWorkout()">Spara</button>
     </div>
-    <button type="button" style="width:100%;margin-top:8px;background:none;border:none;color:var(--red);font-size:0.88rem;cursor:pointer;padding:8px;font-family:inherit;" onclick="deleteWorkout()">🗑 Radera pass</button>
+    <div id="ew-delete-confirm" style="display:none;margin-top:8px;background:var(--surface2);border-radius:10px;padding:12px;text-align:center;">
+      <div style="font-size:0.88rem;color:var(--muted);margin-bottom:10px;">Radera detta träningspass?</div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" style="flex:1;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px;cursor:pointer;font-family:inherit;font-size:0.88rem;" onclick="document.getElementById('ew-delete-confirm').style.display='none'">Avbryt</button>
+        <button type="button" style="flex:1;background:var(--red);border:none;border-radius:8px;color:#fff;padding:8px;cursor:pointer;font-family:inherit;font-size:0.88rem;font-weight:600;" onclick="deleteWorkout()">Radera</button>
+      </div>
+    </div>
+    <button type="button" style="width:100%;margin-top:8px;background:none;border:none;color:var(--red);font-size:0.88rem;cursor:pointer;padding:8px;font-family:inherit;" onclick="document.getElementById('ew-delete-confirm').style.display='block'">🗑 Radera pass</button>
   </div>
 </div>
 
