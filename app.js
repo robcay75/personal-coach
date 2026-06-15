@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v90'
+const APP_VERSION = '2026-06-15 v91'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -574,29 +574,100 @@ async function saveWorkout() {
 }
 
 const _workoutCache = {}
+const STRAVA_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" style="opacity:0.5;flex-shrink:0;"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" fill="#FC4C02"/></svg>`
+
+function weekKey(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  const day = d.getDay() || 7
+  const mon = new Date(d); mon.setDate(d.getDate() - day + 1)
+  return mon.toISOString().split('T')[0]
+}
+
+function weekLabel(weekStart) {
+  const d = new Date(weekStart + 'T00:00:00')
+  const now = new Date()
+  const thisWeekMon = new Date(now); thisWeekMon.setDate(now.getDate() - ((now.getDay() || 7) - 1))
+  thisWeekMon.setHours(0,0,0,0)
+  const diffWeeks = Math.round((thisWeekMon - d) / (7 * 86400000))
+  if (diffWeeks === 0) return 'Denna vecka'
+  if (diffWeeks === 1) return 'Förra veckan'
+  const sun = new Date(d); sun.setDate(d.getDate() + 6)
+  return `${d.getDate()}/${d.getMonth()+1} – ${sun.getDate()}/${sun.getMonth()+1}`
+}
+
+function groupByWeek(items, keyFn) {
+  const groups = {}
+  const order = []
+  for (const item of items) {
+    const wk = weekKey(item.date)
+    if (!groups[wk]) { groups[wk] = []; order.push(wk) }
+    groups[wk].push(item)
+  }
+  return { groups, order }
+}
+
+function renderCollapsibleWeeks(containerId, order, groups, renderItem, summaryFn) {
+  const currentWeek = weekKey(today)
+  const list = document.getElementById(containerId)
+  list.innerHTML = order.map(wk => {
+    const items = groups[wk]
+    const isOpen = wk === currentWeek
+    const label = weekLabel(wk)
+    const summary = summaryFn(items)
+    return `
+      <div class="week-group">
+        <div class="week-group-header" onclick="toggleWeekGroup(this)">
+          <span class="week-group-label">${label}</span>
+          <span class="week-group-meta">${summary}</span>
+          <span class="week-group-chevron">${isOpen ? '▲' : '▼'}</span>
+        </div>
+        <div class="week-group-body" style="display:${isOpen ? 'block' : 'none'}">
+          ${items.map(renderItem).join('')}
+        </div>
+      </div>`
+  }).join('')
+  lucide.createIcons()
+}
+
+function toggleWeekGroup(header) {
+  const body = header.nextElementSibling
+  const chevron = header.querySelector('.week-group-chevron')
+  const open = body.style.display === 'none'
+  body.style.display = open ? 'block' : 'none'
+  chevron.textContent = open ? '▲' : '▼'
+}
 
 async function loadWorkouts() {
-  const { data } = await db.from('workouts').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }).limit(15)
+  const { data } = await db.from('workouts').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }).limit(60)
   const list = document.getElementById('workout-list')
   if (!data?.length) { list.innerHTML = '<div class="empty">Inga pass loggade ännu.</div>'; return }
   const icons = { simning: 'waves', löpning: 'footprints', cykling: 'bike', gym: 'dumbbell', annat: 'zap', 'pendling-cykling': 'bike', 'pendling-promenad': 'footprints' }
   data.forEach(w => { _workoutCache[w.id] = w })
-  list.innerHTML = data.map(w => {
+
+  const { groups, order } = groupByWeek(data, w => w.date)
+
+  const renderItem = w => {
     const fromStrava = !!w.strava_activity_id
-    return `
-    <div class="item-card" style="cursor:pointer;" onclick="openEditWorkout('${w.id}')">
+    return `<div class="item-card" style="cursor:pointer;" onclick="openEditWorkout('${w.id}')">
       <div class="item-top">
         <span class="item-title"><i data-lucide="${icons[w.type] || 'zap'}"></i> ${capitalize(w.type)}</span>
         <span style="display:flex;align-items:center;gap:6px;">
-          ${fromStrava ? `<svg width="14" height="14" viewBox="0 0 24 24" style="opacity:0.5;flex-shrink:0;" title="Strava"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" fill="#FC4C02"/></svg>` : ''}
+          ${fromStrava ? STRAVA_SVG : ''}
           <span class="item-date">${fmtDate(w.date)}</span>
         </span>
       </div>
       <div class="item-meta">${w.duration_minutes} min${w.distance_km ? ' · ' + w.distance_km + ' km' : ''}${w.calories ? ' · ' + w.calories + ' kcal' : ''}</div>
       ${w.notes ? `<div class="item-note">${w.notes}</div>` : ''}
     </div>`
-  }).join('')
-  lucide.createIcons()
+  }
+
+  const summaryFn = items => {
+    const count = items.length
+    const totalMin = items.reduce((s, w) => s + (w.duration_minutes || 0), 0)
+    return `${count} pass · ${totalMin} min`
+  }
+
+  renderCollapsibleWeeks('workout-list', order, groups, renderItem, summaryFn)
 }
 
 let _editWorkoutId = null
@@ -1155,12 +1226,15 @@ async function loadCheckinForm() {
 }
 
 async function loadCheckins() {
-  const { data } = await db.from('checkins').select('*').order('date', { ascending: false }).limit(7)
+  const { data } = await db.from('checkins').select('*').order('date', { ascending: false }).limit(60)
   const list = document.getElementById('checkin-list')
   if (!data?.length) { list.innerHTML = '<div class="empty">Inga check-ins än.</div>'; return }
-  list.innerHTML = data.map(c => {
+
+  const { groups, order } = groupByWeek(data, c => c.date)
+
+  const renderItem = c => {
     const parts = []
-    if (c.sleep_hours != null) parts.push(`<i data-lucide="bed"></i> ${c.sleep_hours}h`)
+    if (c.sleep_hours != null) parts.push(`${c.sleep_hours}h sömn`)
     if (c.sleep_quality) parts.push(`Sömn ${stars(c.sleep_quality)}`)
     if (c.body_feeling) parts.push(`Kropp ${stars(c.body_feeling)}`)
     if (c.energy_level) parts.push(`Energi ${stars(c.energy_level)}`)
@@ -1170,11 +1244,14 @@ async function loadCheckins() {
         <span class="item-date">${fmtDate(c.date)}</span>
       </div>
       <div class="item-meta">${parts.join(' · ') || '—'}</div>
-      ${c.morning_intention ? `<div class="item-note"><i data-lucide="sunrise"></i> ${c.morning_intention}</div>` : ''}
-      ${c.evening_summary ? `<div class="item-note"><i data-lucide="moon"></i> ${c.evening_summary}</div>` : ''}
+      ${c.morning_intention ? `<div class="item-note">${c.morning_intention}</div>` : ''}
+      ${c.evening_summary ? `<div class="item-note">${c.evening_summary}</div>` : ''}
     </div>`
-  }).join('')
-  lucide.createIcons()
+  }
+
+  const summaryFn = items => `${items.length} check-ins`
+
+  renderCollapsibleWeeks('checkin-list', order, groups, renderItem, summaryFn)
 }
 
 // ── Export ────────────────────────────────────────────────

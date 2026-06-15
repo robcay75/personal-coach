@@ -663,3 +663,20 @@ svg.chart {
 }
 .weekly-report-item:last-child { border-bottom: none; }
 .weekly-report-item:hover .wri-label { color: var(--accent); }
+
+
+/* ── Veckogruppering ── */
+.week-group { margin-bottom: 4px; }
+.week-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.week-group-header:active { opacity: 0.7; }
+.week-group-label { font-size: 0.82rem; font-weight: 600; color: var(--muted); flex: 1; }
+.week-group-meta { font-size: 0.75rem; color: var(--dim); }
+.week-group-chevron { font-size: 0.65rem; color: var(--dim); }
+.week-group-body { padding-bottom: 4px; }
