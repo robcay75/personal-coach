@@ -723,6 +723,55 @@
       <button type="button" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;font-weight:600;padding:12px;cursor:pointer;font-family:inherit;" onclick="closeEditMeal()">Avbryt</button>
       <button type="button" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:0.95rem;font-weight:600;padding:12px;cursor:pointer;font-family:inherit;" onclick="saveEditMeal()">Spara</button>
     </div>
+    <button type="button" style="width:100%;margin-top:8px;background:none;border:none;color:var(--red);font-size:0.88rem;cursor:pointer;padding:8px;font-family:inherit;" onclick="deleteMeal()">🗑 Radera måltid</button>
+  </div>
+</div>
+
+<!-- Edit-workout bottom sheet -->
+<div id="edit-workout-overlay" class="edit-meal-overlay" onclick="if(event.target===this)closeEditWorkout()">
+  <div class="edit-meal-sheet">
+    <h3>Redigera pass</h3>
+
+    <div class="row2">
+      <div>
+        <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Typ</label>
+        <select id="ew-type" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:inherit;padding:8px 10px;font-size:0.95rem;font-family:inherit;">
+          <option value="löpning">Löpning</option>
+          <option value="cykling">Cykling</option>
+          <option value="simning">Simning</option>
+          <option value="gym">Gym</option>
+          <option value="pendling-cykling">Pendling cykel</option>
+          <option value="pendling-promenad">Pendling promenad</option>
+          <option value="annat">Annat</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Datum</label>
+        <input type="date" id="ew-date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:inherit;padding:8px 10px;font-size:0.95rem;font-family:inherit;" />
+      </div>
+    </div>
+
+    <div class="row2">
+      <div>
+        <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Tid (min)</label>
+        <input type="number" id="ew-duration" min="1" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:inherit;padding:8px 10px;font-size:0.95rem;font-family:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Distans (km)</label>
+        <input type="number" id="ew-distance" min="0" step="0.1" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:inherit;padding:8px 10px;font-size:0.95rem;font-family:inherit;" />
+      </div>
+    </div>
+
+    <div>
+      <label style="font-size:0.85rem;color:var(--muted);margin-bottom:4px;display:block;">Anteckningar</label>
+      <textarea id="ew-notes" rows="2" style="width:100%;resize:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:inherit;padding:8px;font-size:0.95rem;font-family:inherit;box-sizing:border-box;"></textarea>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button type="button" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;font-weight:600;padding:12px;cursor:pointer;font-family:inherit;" onclick="closeEditWorkout()">Avbryt</button>
+      <button type="button" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:0.95rem;font-weight:600;padding:12px;cursor:pointer;font-family:inherit;" onclick="saveEditWorkout()">Spara</button>
+    </div>
+    <button type="button" style="width:100%;margin-top:8px;background:none;border:none;color:var(--red);font-size:0.88rem;cursor:pointer;padding:8px;font-family:inherit;" onclick="deleteWorkout()">🗑 Radera pass</button>
   </div>
 </div>
 

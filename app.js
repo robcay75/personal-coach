@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v86'
+const APP_VERSION = '2026-06-15 v87'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -573,21 +573,69 @@ async function saveWorkout() {
   loadWorkouts()
 }
 
+const _workoutCache = {}
+
 async function loadWorkouts() {
   const { data } = await db.from('workouts').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }).limit(15)
   const list = document.getElementById('workout-list')
   if (!data?.length) { list.innerHTML = '<div class="empty">Inga pass loggade ännu.</div>'; return }
   const icons = { simning: 'waves', löpning: 'footprints', cykling: 'bike', gym: 'dumbbell', annat: 'zap', 'pendling-cykling': 'bike', 'pendling-promenad': 'footprints' }
+  data.forEach(w => { _workoutCache[w.id] = w })
   list.innerHTML = data.map(w => `
-    <div class="item-card">
+    <div class="item-card" style="cursor:pointer;" onclick="openEditWorkout('${w.id}')">
       <div class="item-top">
         <span class="item-title"><i data-lucide="${icons[w.type] || 'zap'}"></i> ${capitalize(w.type)}</span>
         <span class="item-date">${fmtDate(w.date)}</span>
       </div>
-      <div class="item-meta">${w.duration_minutes} min${w.distance_km ? ' · ' + w.distance_km + ' km' : ''}${w.calories ? ' · <i data-lucide="flame"></i> ' + w.calories + ' kcal' : ''}</div>
+      <div class="item-meta">${w.duration_minutes} min${w.distance_km ? ' · ' + w.distance_km + ' km' : ''}${w.calories ? ' · ' + w.calories + ' kcal' : ''}</div>
       ${w.notes ? `<div class="item-note">${w.notes}</div>` : ''}
     </div>`).join('')
   lucide.createIcons()
+}
+
+let _editWorkoutId = null
+
+function openEditWorkout(id) {
+  const w = _workoutCache[id]
+  if (!w) return
+  _editWorkoutId = id
+  document.getElementById('ew-type').value     = w.type || 'annat'
+  document.getElementById('ew-date').value     = w.date || today
+  document.getElementById('ew-duration').value = w.duration_minutes || ''
+  document.getElementById('ew-distance').value = w.distance_km || ''
+  document.getElementById('ew-notes').value    = w.notes || ''
+  document.getElementById('edit-workout-overlay').classList.add('open')
+}
+
+function closeEditWorkout() {
+  document.getElementById('edit-workout-overlay').classList.remove('open')
+  _editWorkoutId = null
+}
+
+async function saveEditWorkout() {
+  if (!_editWorkoutId) return
+  const duration = parseInt(document.getElementById('ew-duration').value)
+  if (!duration || duration < 1) { alert('Ange tid i minuter.'); return }
+  const updates = {
+    type:             document.getElementById('ew-type').value,
+    date:             document.getElementById('ew-date').value,
+    duration_minutes: duration,
+    distance_km:      parseFloat(document.getElementById('ew-distance').value) || null,
+    notes:            document.getElementById('ew-notes').value.trim() || null
+  }
+  const { error } = await db.from('workouts').update(updates).eq('id', _editWorkoutId)
+  if (error) { alert('Kunde inte spara: ' + error.message); return }
+  closeEditWorkout()
+  loadWorkouts(); loadHome()
+}
+
+async function deleteWorkout() {
+  if (!_editWorkoutId) return
+  if (!confirm('Radera detta träningspass?')) return
+  const { error } = await db.from('workouts').delete().eq('id', _editWorkoutId)
+  if (error) { alert('Kunde inte radera: ' + error.message); return }
+  closeEditWorkout()
+  loadWorkouts(); loadHome()
 }
 
 // ── Meals ─────────────────────────────────────────────────
@@ -826,11 +874,21 @@ async function loadWeights() {
     <div class="item-card">
       <div class="item-top">
         <span class="item-title"><i data-lucide="scale"></i> ${w.weight_kg} kg ${arrow}</span>
-        <span class="item-date">${fmtDate(w.date)}</span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="item-date">${fmtDate(w.date)}</span>
+          <button onclick="event.stopPropagation();deleteWeight('${w.id}')" style="background:none;border:none;color:var(--dim);font-size:0.8rem;cursor:pointer;padding:2px 4px;" title="Radera">🗑</button>
+        </span>
       </div>
     </div>`
   }).join('')
   lucide.createIcons()
+}
+
+async function deleteWeight(id) {
+  if (!confirm('Radera denna vikloggning?')) return
+  const { error } = await db.from('weight_logs').delete().eq('id', id)
+  if (error) { alert('Kunde inte radera: ' + error.message); return }
+  loadWeights(); loadWeightHomeCard()
 }
 
 function drawWeightChart(entries) {
@@ -1608,6 +1666,15 @@ async function saveEditMeal() {
   if (desc) updates.description = desc
   const { error } = await db.from('meals').update(updates).eq('id', _editMealId)
   if (error) { alert('Kunde inte spara: ' + error.message); return }
+  closeEditMeal()
+  loadMeals(); updateCalToday()
+}
+
+async function deleteMeal() {
+  if (!_editMealId) return
+  if (!confirm('Radera denna måltid?')) return
+  const { error } = await db.from('meals').delete().eq('id', _editMealId)
+  if (error) { alert('Kunde inte radera: ' + error.message); return }
   closeEditMeal()
   loadMeals(); updateCalToday()
 }
