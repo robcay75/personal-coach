@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v96'
+const APP_VERSION = '2026-06-15 v97'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -809,9 +809,10 @@ async function loadMeals() {
   const typeIcons = { frukost: 'sunrise', lunch: 'sun', middag: 'moon', mellanmål: 'apple' }
   const byDate = {}
   data.forEach(m => { _mealCache[m.id] = m; if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m) })
-  const hasBreakfastToday = (byDate[today] || []).some(m => m.meal_type === 'frukost')
+  const selectedDate = val('m-date') || today
+  const hasBreakfastOnDate = (byDate[selectedDate] || []).some(m => m.meal_type === 'frukost')
   const skipBtn = document.getElementById('skip-breakfast-btn')
-  if (skipBtn) skipBtn.style.display = hasBreakfastToday ? 'none' : ''
+  if (skipBtn) skipBtn.style.display = hasBreakfastOnDate ? 'none' : ''
   let html = ''
   for (const date of Object.keys(byDate).sort().reverse()) {
     const label = date === today ? 'Idag' : date === prevDay(today) ? 'Igår' : fmtDate(date)
@@ -833,9 +834,10 @@ async function loadMeals() {
 async function skipBreakfast() {
   const btn = document.getElementById('skip-breakfast-btn')
   if (btn) btn.disabled = true
+  const date = val('m-date') || today
   const { error } = await db.from('meals').insert({
     user_id: currentUser.id,
-    date: today, meal_type: 'frukost', description: 'Ingen frukost · fasta', calories: 0, health_score: 5
+    date, meal_type: 'frukost', description: 'Ingen frukost · fasta', calories: 0, health_score: 5
   })
   if (error) { alert('Kunde inte logga: ' + error.message); if (btn) btn.disabled = false; return }
   loadMeals(); updateCalToday()
