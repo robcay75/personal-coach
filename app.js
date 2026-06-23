@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v98'
+const APP_VERSION = '2026-06-23 v99'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -947,8 +947,10 @@ async function loadWeights() {
     drawWeightChart(data.slice().reverse().slice(-15))
   }
 
+  const _wc = {}
   list.innerHTML = data.map((w, i) => {
     const prev = data[i + 1]
+    _wc[w.id] = w
     let arrow = ''
     if (prev) {
       const diff = Math.round((w.weight_kg - prev.weight_kg) * 10) / 10
@@ -957,32 +959,50 @@ async function loadWeights() {
       else arrow = `<i data-lucide="minus" class="weight-arrow flat"></i><span class="weight-diff flat">±0</span>`
     }
     return `
-    <div class="item-card">
+    <div class="item-card" onclick="openEditWeight('${w.id}')" style="cursor:pointer;">
       <div class="item-top">
         <span class="item-title"><i data-lucide="scale"></i> ${w.weight_kg} kg ${arrow}</span>
-        <span style="display:flex;align-items:center;gap:8px;">
-          <span class="item-date">${fmtDate(w.date)}</span>
-          <button onclick="event.stopPropagation();confirmDeleteWeight('${w.id}', this)" style="background:none;border:none;color:var(--dim);font-size:0.8rem;cursor:pointer;padding:2px 4px;" title="Radera">🗑</button>
-        </span>
+        <span class="item-date">${fmtDate(w.date)}</span>
       </div>
     </div>`
   }).join('')
+  Object.assign(_weightCache, _wc)
   lucide.createIcons()
 }
 
-function confirmDeleteWeight(id, btn) {
-  // Byt ut knappen mot en inline bekräftelse
-  const span = btn.parentElement
-  span.innerHTML = `
-    <span style="font-size:0.78rem;color:var(--muted);">Radera?</span>
-    <button onclick="event.stopPropagation();deleteWeight('${id}')" style="background:var(--red);border:none;border-radius:6px;color:#fff;font-size:0.78rem;padding:2px 8px;cursor:pointer;font-family:inherit;">Ja</button>
-    <button onclick="event.stopPropagation();loadWeights()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.78rem;padding:2px 8px;cursor:pointer;font-family:inherit;">Nej</button>
-  `
+const _weightCache = {}
+
+function openEditWeight(id) {
+  const w = _weightCache[id]
+  if (!w) return
+  document.getElementById('ew2-kg').value = w.weight_kg
+  document.getElementById('ew2-date').value = w.date
+  document.getElementById('ew2-delete-confirm').style.display = 'none'
+  const overlay = document.getElementById('edit-weight-overlay')
+  overlay.dataset.id = id
+  overlay.classList.add('open')
 }
 
-async function deleteWeight(id) {
+function closeEditWeight() {
+  document.getElementById('edit-weight-overlay').classList.remove('open')
+}
+
+async function saveEditWeight() {
+  const id = document.getElementById('edit-weight-overlay').dataset.id
+  const kg = parseFloat(document.getElementById('ew2-kg').value)
+  const date = document.getElementById('ew2-date').value
+  if (!kg || !date) return
+  const { error } = await db.from('weight_logs').update({ weight_kg: kg, date }).eq('id', id)
+  if (error) { alert('Kunde inte spara: ' + error.message); return }
+  closeEditWeight()
+  loadWeights(); loadWeightHomeCard()
+}
+
+async function deleteWeightFromSheet() {
+  const id = document.getElementById('edit-weight-overlay').dataset.id
   const { error } = await db.from('weight_logs').delete().eq('id', id)
   if (error) { alert('Kunde inte radera: ' + error.message); return }
+  closeEditWeight()
   loadWeights(); loadWeightHomeCard()
 }
 
