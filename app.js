@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-15 v97'
+const APP_VERSION = '2026-06-15 v98'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -962,7 +962,7 @@ async function loadWeights() {
         <span class="item-title"><i data-lucide="scale"></i> ${w.weight_kg} kg ${arrow}</span>
         <span style="display:flex;align-items:center;gap:8px;">
           <span class="item-date">${fmtDate(w.date)}</span>
-          <button onclick="event.stopPropagation();deleteWeight('${w.id}')" style="background:none;border:none;color:var(--dim);font-size:0.8rem;cursor:pointer;padding:2px 4px;" title="Radera">🗑</button>
+          <button onclick="event.stopPropagation();confirmDeleteWeight('${w.id}', this)" style="background:none;border:none;color:var(--dim);font-size:0.8rem;cursor:pointer;padding:2px 4px;" title="Radera">🗑</button>
         </span>
       </div>
     </div>`
@@ -970,8 +970,17 @@ async function loadWeights() {
   lucide.createIcons()
 }
 
+function confirmDeleteWeight(id, btn) {
+  // Byt ut knappen mot en inline bekräftelse
+  const span = btn.parentElement
+  span.innerHTML = `
+    <span style="font-size:0.78rem;color:var(--muted);">Radera?</span>
+    <button onclick="event.stopPropagation();deleteWeight('${id}')" style="background:var(--red);border:none;border-radius:6px;color:#fff;font-size:0.78rem;padding:2px 8px;cursor:pointer;font-family:inherit;">Ja</button>
+    <button onclick="event.stopPropagation();loadWeights()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.78rem;padding:2px 8px;cursor:pointer;font-family:inherit;">Nej</button>
+  `
+}
+
 async function deleteWeight(id) {
-  if (!confirm('Radera denna vikloggning?')) return
   const { error } = await db.from('weight_logs').delete().eq('id', id)
   if (error) { alert('Kunde inte radera: ' + error.message); return }
   loadWeights(); loadWeightHomeCard()
