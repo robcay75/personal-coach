@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-23 v99'
+const APP_VERSION = '2026-06-25 v100'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1833,6 +1833,16 @@ function renderHealthConnectStatus(connected) {
   lucide.createIcons()
 }
 
+function showStepsTooltip(el, label) {
+  document.querySelectorAll('.steps-bar-tooltip').forEach(t => t.remove())
+  const tip = document.createElement('div')
+  tip.className = 'steps-bar-tooltip'
+  tip.textContent = label
+  el.style.position = 'relative'
+  el.appendChild(tip)
+  setTimeout(() => tip.remove(), 2500)
+}
+
 function requestHealthConnect() {
   if (window.AndroidBridge) window.AndroidBridge.requestPermissions()
 }
@@ -1870,7 +1880,8 @@ function renderStepsCard(data) {
     const steps = weekData[dateStr] || 0
     const h = Math.max(4, Math.round((steps / maxVal) * BAR_H))
     const isToday = dateStr === todayStr
-    return `<div class="steps-week-bar-fill${isToday ? ' today' : ''}" style="height:${h}px"></div>`
+    const label = steps > 0 ? steps.toLocaleString('sv-SE') + ' steg' : 'Inga steg'
+    return `<div class="steps-week-bar-fill${isToday ? ' today' : ''}" style="height:${h}px;cursor:pointer;" onclick="showStepsTooltip(this,'${label}')"></div>`
   }).join('')
   const labelsHtml = dates.map(dateStr => {
     const d = new Date(dateStr + 'T12:00:00')
