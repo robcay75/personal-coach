@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-25 v100'
+const APP_VERSION = '2026-06-25 v101'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1834,12 +1834,12 @@ function renderHealthConnectStatus(connected) {
 }
 
 function showStepsTooltip(el, label) {
+  const container = document.getElementById('steps-week-bars')
   document.querySelectorAll('.steps-bar-tooltip').forEach(t => t.remove())
   const tip = document.createElement('div')
   tip.className = 'steps-bar-tooltip'
   tip.textContent = label
-  el.style.position = 'relative'
-  el.appendChild(tip)
+  container.appendChild(tip)
   setTimeout(() => tip.remove(), 2500)
 }
 
