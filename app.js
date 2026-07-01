@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-25 v104'
+const APP_VERSION = '2026-06-25 v105'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1833,7 +1833,7 @@ function renderHealthConnectStatus(connected) {
   lucide.createIcons()
 }
 
-function showStepsTooltip(el, label) {
+function showStepsTooltip(label) {
   const lbl = document.getElementById('steps-tap-label')
   if (!lbl) return
   lbl.textContent = label
@@ -1874,12 +1874,11 @@ function renderStepsCard(data) {
   const BAR_H = 36
   const maxVal = Math.max(...dates.map(d => weekData[d] || 0), goal, 1)
   const goalPct = Math.round((goal / maxVal) * 100)
-  const stepLabels = []
+  const stepCounts = dates.map(dateStr => weekData[dateStr] || 0)
   const fillsHtml = dates.map((dateStr, i) => {
-    const steps = weekData[dateStr] || 0
+    const steps = stepCounts[i]
     const h = Math.max(4, Math.round((steps / maxVal) * BAR_H))
     const isToday = dateStr === todayStr
-    stepLabels.push(steps > 0 ? steps.toLocaleString('sv-SE') + ' steg' : 'Inga steg')
     return `<div class="steps-bar-col" data-si="${i}"><div class="steps-week-bar-fill${isToday ? ' today' : ''}" style="height:${h}px;"></div></div>`
   }).join('')
   const labelsHtml = dates.map(dateStr => {
@@ -1889,14 +1888,19 @@ function renderStepsCard(data) {
     return `<span class="steps-week-bar-label${isToday ? ' today' : ''}">${dayName}</span>`
   }).join('')
   const goalLine = `<div style="position:absolute;left:0;right:0;bottom:${goalPct}%;border-top:1px dashed rgba(255,255,255,0.18);pointer-events:none;"></div>`
-  document.getElementById('steps-week-bars').innerHTML =
+  const barsEl = document.getElementById('steps-week-bars')
+  barsEl.innerHTML =
     `<div class="steps-bars-area">${goalLine}${fillsHtml}</div>` +
     `<div class="steps-bars-labels">${labelsHtml}</div>`
 
-  document.querySelectorAll('#steps-week-bars .steps-bar-col').forEach(col => {
-    col.addEventListener('click', () => showStepsTooltip(col, stepLabels[+col.dataset.si]))
-    col.addEventListener('touchend', e => { e.preventDefault(); showStepsTooltip(col, stepLabels[+col.dataset.si]) })
-  })
+  barsEl.ontouchstart = null
+  barsEl.onclick = function(e) {
+    const col = e.target.closest('.steps-bar-col')
+    if (!col) return
+    const i = +col.dataset.si
+    const label = stepCounts[i] > 0 ? stepCounts[i].toLocaleString('sv-SE') + ' steg' : 'Inga steg'
+    showStepsTooltip(label)
+  }
 }
 
 // ── Weekly Summary ────────────────────────────────────────
