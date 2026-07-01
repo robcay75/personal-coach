@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-25 v101'
+const APP_VERSION = '2026-06-25 v102'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1881,7 +1881,7 @@ function renderStepsCard(data) {
     const h = Math.max(4, Math.round((steps / maxVal) * BAR_H))
     const isToday = dateStr === todayStr
     const label = steps > 0 ? steps.toLocaleString('sv-SE') + ' steg' : 'Inga steg'
-    return `<div class="steps-week-bar-fill${isToday ? ' today' : ''}" style="height:${h}px;cursor:pointer;" onclick="showStepsTooltip(this,'${label}')"></div>`
+    return `<div class="steps-bar-col" onclick="showStepsTooltip(this,'${label}')"><div class="steps-week-bar-fill${isToday ? ' today' : ''}" style="height:${h}px;"></div></div>`
   }).join('')
   const labelsHtml = dates.map(dateStr => {
     const d = new Date(dateStr + 'T12:00:00')

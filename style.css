@@ -628,7 +628,8 @@ svg.chart {
 .steps-week-bars { display: flex; flex-direction: column; gap: 6px; }
 .steps-bars-area { position: relative; display: flex; align-items: flex-end; gap: 4px; height: 36px; }
 .steps-bars-labels { display: flex; gap: 4px; }
-.steps-week-bar-fill { flex: 1; border-radius: 3px 3px 0 0; background: var(--surface2); min-height: 4px; }
+.steps-bar-col { flex: 1; height: 36px; display: flex; align-items: flex-end; cursor: pointer; }
+.steps-week-bar-fill { width: 100%; border-radius: 3px 3px 0 0; background: var(--surface2); min-height: 4px; }
 .steps-week-bar-fill.today { background: var(--green); }
 .steps-week-bar-label { flex: 1; font-size: 0.65rem; color: var(--muted); text-align: center; }
 .steps-week-bar-label.today { color: var(--green); font-weight: 600; }
