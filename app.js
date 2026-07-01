@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-25 v103'
+const APP_VERSION = '2026-06-25 v104'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1874,12 +1874,13 @@ function renderStepsCard(data) {
   const BAR_H = 36
   const maxVal = Math.max(...dates.map(d => weekData[d] || 0), goal, 1)
   const goalPct = Math.round((goal / maxVal) * 100)
-  const fillsHtml = dates.map(dateStr => {
+  const stepLabels = []
+  const fillsHtml = dates.map((dateStr, i) => {
     const steps = weekData[dateStr] || 0
     const h = Math.max(4, Math.round((steps / maxVal) * BAR_H))
     const isToday = dateStr === todayStr
-    const label = steps > 0 ? steps.toLocaleString('sv-SE') + ' steg' : 'Inga steg'
-    return `<div class="steps-bar-col" onclick="showStepsTooltip(this,'${label}')"><div class="steps-week-bar-fill${isToday ? ' today' : ''}" style="height:${h}px;"></div></div>`
+    stepLabels.push(steps > 0 ? steps.toLocaleString('sv-SE') + ' steg' : 'Inga steg')
+    return `<div class="steps-bar-col" data-si="${i}"><div class="steps-week-bar-fill${isToday ? ' today' : ''}" style="height:${h}px;"></div></div>`
   }).join('')
   const labelsHtml = dates.map(dateStr => {
     const d = new Date(dateStr + 'T12:00:00')
@@ -1891,6 +1892,11 @@ function renderStepsCard(data) {
   document.getElementById('steps-week-bars').innerHTML =
     `<div class="steps-bars-area">${goalLine}${fillsHtml}</div>` +
     `<div class="steps-bars-labels">${labelsHtml}</div>`
+
+  document.querySelectorAll('#steps-week-bars .steps-bar-col').forEach(col => {
+    col.addEventListener('click', () => showStepsTooltip(col, stepLabels[+col.dataset.si]))
+    col.addEventListener('touchend', e => { e.preventDefault(); showStepsTooltip(col, stepLabels[+col.dataset.si]) })
+  })
 }
 
 // ── Weekly Summary ────────────────────────────────────────
