@@ -683,4 +683,4 @@ svg.chart {
 .week-group-chevron { font-size: 0.65rem; color: var(--dim); }
 .week-group-body { padding-bottom: 4px; }
 
-.steps-bar-tooltip { text-align:center; font-size:0.75rem; color:var(--text); font-weight:600; padding:2px 0; }
+.steps-bar-tooltip { position:absolute; top:0; transform:translateX(-50%); background:var(--card); border:1px solid var(--border); color:var(--text); font-size:0.72rem; font-weight:600; white-space:nowrap; padding:3px 10px; border-radius:8px; z-index:20; pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,0.3); }

@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-25 v105'
+const APP_VERSION = '2026-06-25 v106'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -1833,12 +1833,20 @@ function renderHealthConnectStatus(connected) {
   lucide.createIcons()
 }
 
-function showStepsTooltip(label) {
-  const lbl = document.getElementById('steps-tap-label')
-  if (!lbl) return
-  lbl.textContent = label
-  clearTimeout(lbl._t)
-  lbl._t = setTimeout(() => { lbl.textContent = '' }, 2500)
+function showStepsTooltip(col, label) {
+  const container = document.getElementById('steps-week-bars')
+  document.querySelectorAll('.steps-bar-tooltip').forEach(t => t.remove())
+  const tip = document.createElement('div')
+  tip.className = 'steps-bar-tooltip'
+  tip.textContent = label
+  container.style.position = 'relative'
+  container.appendChild(tip)
+  const cRect = container.getBoundingClientRect()
+  const bRect = col.getBoundingClientRect()
+  const left = bRect.left - cRect.left + bRect.width / 2
+  tip.style.left = left + 'px'
+  clearTimeout(tip._t)
+  tip._t = setTimeout(() => tip.remove(), 2500)
 }
 
 function requestHealthConnect() {
@@ -1899,7 +1907,7 @@ function renderStepsCard(data) {
     if (!col) return
     const i = +col.dataset.si
     const label = stepCounts[i] > 0 ? stepCounts[i].toLocaleString('sv-SE') + ' steg' : 'Inga steg'
-    showStepsTooltip(label)
+    showStepsTooltip(col, label)
   }
 }
 
