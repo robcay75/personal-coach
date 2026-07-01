@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-06-25 v106'
+const APP_VERSION = '2026-06-25 v107'
 
 // ── Supabase ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://wwrhyxeuoxxuhtrawkhg.supabase.co'
@@ -510,9 +510,10 @@ async function logCommute(type) {
   const kcalPerMin = isBike ? settings.commute_bike_kcal_per_min : settings.commute_walk_kcal_per_min
   const kcalEstimate = Math.round(kcalPerMin * min * 2)
 
+  const commuteDate = val('w-date') || today
   const { error, data: inserted } = await db.from('workouts').insert({
     user_id: currentUser.id,
-    type: dbType, date: today,
+    type: dbType, date: commuteDate,
     duration_minutes: min * 2,
     distance_km: Math.round(km * 2 * 10) / 10,
     calories: kcalEstimate,
@@ -522,10 +523,9 @@ async function logCommute(type) {
 
   if (error) return setStatus('commute-status', 'Fel: ' + error.message, true)
 
-  // Räkna totalt antal pass av denna typ idag (för visning)
   const { count: totalCount } = await db.from('workouts')
     .select('id', { count: 'exact', head: true })
-    .eq('date', today).eq('type', dbType)
+    .eq('date', commuteDate).eq('type', dbType)
 
   const emoji = type === 'cykling' ? '🚴' : '🚶'
   setStatus('commute-status', `${emoji} Loggat! ${totalCount} t/r idag · ${kcalEstimate} kcal/tur`)
